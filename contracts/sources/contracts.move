@@ -1,9 +1,12 @@
-/*
-/// Module: contracts
 module contracts::contracts;
-*/
 
-// For Move coding conventions, see
-// https://docs.sui.io/concepts/sui-move-concepts/conventions
+public struct AdminCap has key{
+    id:UID
+}
 
-
+fun init(ctx: &mut TxContext){
+    let admin_cap = AdminCap{
+        id: object::new(ctx)
+    };
+    transfer::transfer(admin_cap, tx_context::sender(ctx));
+}
