@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import Sidebar from "@/components/sidebar";
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -68,10 +68,7 @@ export default function ContractDetailPage({ params }: { params: { id: string } 
   };
 
   return (
-    <div className="flex min-h-screen bg-background">
-      <Sidebar />
-      
-      <main className="flex-1 ml-64 p-8">
+    <div className="min-h-screen bg-background">
         <div className="max-w-6xl mx-auto space-y-6">
           
           {/* Header & Ana Aksiyon */}
@@ -293,7 +290,6 @@ export default function ContractDetailPage({ params }: { params: { id: string } 
             </div>
           </div>
         </div>
-      </main>
     </div>
   );
 }
