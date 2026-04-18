@@ -1,150 +1,169 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
+import Sidebar from "@/components/sidebar";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+// Github ve Figma yerine Globe ve Palette ekledik
 import {
-  Briefcase, Search, CheckCircle2, Star,
-  Filter, Wallet, ArrowUpRight,
+  Search,
+  Filter,
+  ShieldCheck,
+  Globe,
+  Palette,
+  Code2,
+  Hexagon,
+  ExternalLink,
+  Wallet
 } from "lucide-react";
 
-const freelancers = [
-  { id: "1", name: "Ahmet Yılmaz", title: "Full-Stack Developer", skills: ["React", "Node.js", "PostgreSQL"], rating: 4.9, jobs: 23, anonymous: false, verified: true },
-  { id: "2", name: "0x3d4e...5f6a", title: "UI/UX Designer", skills: ["Figma", "Tailwind", "Framer"], rating: 4.7, jobs: 15, anonymous: true, verified: false },
-  { id: "3", name: "Zeynep Kara", title: "Mobile Developer", skills: ["React Native", "Expo", "Swift"], rating: 5.0, jobs: 31, anonymous: false, verified: true },
-  { id: "4", name: "0x7b8c...9d0e", title: "Blockchain Developer", skills: ["Sui Move", "Solidity", "Web3"], rating: 4.8, jobs: 12, anonymous: true, verified: false },
-  { id: "5", name: "Mert Aydın", title: "Backend Developer", skills: ["Go", "Docker", "Kubernetes"], rating: 4.6, jobs: 19, anonymous: false, verified: true },
-  { id: "6", name: "0x2c3d...4e5f", title: "Data Scientist", skills: ["Python", "TensorFlow", "SQL"], rating: 4.5, jobs: 8, anonymous: true, verified: false },
-];
-
-const filters = ["Tümü", "Doğrulanmış", "Anonim", "En Yüksek Puan"];
-
 export default function ExplorePage() {
-  const [search, setSearch] = useState("");
-  const [activeFilter, setActiveFilter] = useState("Tümü");
-
-  const filtered = freelancers.filter((f) => {
-    const matchSearch = f.name.toLowerCase().includes(search.toLowerCase()) ||
-      f.title.toLowerCase().includes(search.toLowerCase()) ||
-      f.skills.some(s => s.toLowerCase().includes(search.toLowerCase()));
-    const matchFilter =
-      activeFilter === "Tümü" ? true :
-      activeFilter === "Doğrulanmış" ? f.verified :
-      activeFilter === "Anonim" ? f.anonymous :
-      activeFilter === "En Yüksek Puan" ? f.rating >= 4.8 : true;
-    return matchSearch && matchFilter;
-  });
+  // Arayüz iskeletini oluşturmak için statik liste (İleride API'den gelecek)
+  const freelancers = [
+    {
+      id: "1",
+      wallet: "0x7a2...9f1b",
+      role: "Frontend & Web3 Developer",
+      trustScore: 24, // Tamamlanan akıllı sözleşme sayısı
+      skills: ["React", "Next.js", "Sui Move"],
+      isVerified: true,
+      links: { github: true, figma: false }
+    },
+    {
+      id: "2",
+      wallet: "0x3b1...4c8d",
+      role: "UI/UX & Product Designer",
+      trustScore: 18,
+      skills: ["Figma", "Prototyping", "Wireframing"],
+      isVerified: true,
+      links: { github: false, figma: true }
+    },
+    {
+      id: "3",
+      wallet: "0x9c4...2e5a",
+      role: "Smart Contract Engineer",
+      trustScore: 8,
+      skills: ["Solidity", "Rust", "Sui Move", "Auditing"],
+      isVerified: false,
+      links: { github: true, figma: false }
+    },
+    {
+      id: "4",
+      wallet: "0x1f8...7d2c",
+      role: "Fullstack Geliştirici",
+      trustScore: 32,
+      skills: ["Node.js", "Express", "React", "PostgreSQL"],
+      isVerified: true,
+      links: { github: true, figma: true }
+    }
+  ];
 
   return (
-    <div className="min-h-screen bg-background">
-      {/* Navbar */}
-      <nav className="fixed top-0 left-0 right-0 z-50 border-b border-border bg-background/80 backdrop-blur-md">
-        <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <Briefcase size={16} className="text-white" />
+    <div className="flex min-h-screen bg-background">
+      <Sidebar />
+
+      <main className="flex-1 ml-64 p-8">
+        <div className="max-w-6xl mx-auto space-y-8">
+
+          {/* Header & Arama/Filtre */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight mb-2">Yetenekleri Keşfet</h1>
+              <p className="text-sm text-muted-foreground">
+                Zincir üzerinde doğrulanmış yetenekleri bul ve güvenli akıllı sözleşmelerle çalışmaya başla.
+              </p>
             </div>
-            <span className="font-semibold text-lg">WorkSeal</span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <Link href="/explore">
-              <Button variant="ghost" size="sm" className="text-primary text-sm">Keşfet</Button>
-            </Link>
-            <Link href="/connect">
-              <Button size="sm" className="bg-primary hover:bg-primary/90 text-white gap-2">
-                <Wallet size={14} /> Cüzdan Bağla
+
+            <div className="flex w-full md:w-auto gap-3">
+              <div className="relative w-full md:w-72">
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+                <Input
+                  placeholder="Yetenek, rol veya cüzdan ara..."
+                  className="pl-9 bg-card border-border/50 focus-visible:ring-primary/50"
+                />
+              </div>
+              <Button variant="outline" className="gap-2 border-border/50">
+                <Filter size={16} /> Filtrele
               </Button>
-            </Link>
+            </div>
           </div>
-        </div>
-      </nav>
 
-      <div className="max-w-6xl mx-auto px-6 pt-28 pb-16">
-        {/* Başlık */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold mb-3">Freelancer Keşfet</h1>
-          <p className="text-muted-foreground">
-            Blockchain üzerinde doğrulanmış freelancer'larla çalış.
-          </p>
-          <div className="flex items-center justify-center gap-2 mt-4 text-xs text-muted-foreground">
-            <Wallet size={12} />
-            <span>İşlem yapmak için cüzdan bağlantısı gereklidir</span>
-          </div>
-        </div>
-
-        {/* Arama & Filtre */}
-        <div className="flex items-center gap-4 mb-8 flex-wrap">
-          <div className="relative flex-1 max-w-md">
-            <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              placeholder="İsim, ünvan veya yetenek ara..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-9 bg-card border-border"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <Filter size={14} className="text-muted-foreground" />
-            {filters.map((f) => (
-              <button
-                key={f}
-                onClick={() => setActiveFilter(f)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
-                  activeFilter === f
-                    ? "bg-primary text-white"
-                    : "bg-card text-muted-foreground border border-border hover:border-primary/30"
-                }`}
+          {/* Hızlı Yetenek Filtreleri */}
+          <div className="flex flex-wrap gap-2">
+            {["Tümü", "Frontend", "Backend", "UI/UX Tasarım", "Smart Contract", "Sui Network"].map((tag, i) => (
+              <Badge
+                key={tag}
+                variant={i === 0 ? "default" : "secondary"}
+                className={`px-4 py-1.5 cursor-pointer text-xs ${i === 0 ? "bg-primary text-primary-foreground shadow-[0_0_10px_rgba(var(--primary),0.3)]" : "hover:bg-secondary/80"}`}
               >
-                {f}
-              </button>
+                {tag}
+              </Badge>
             ))}
           </div>
-        </div>
 
-        {/* Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filtered.map((f) => (
-            <Card key={f.id} className="p-5 bg-card border-border hover:border-primary/30 transition-all group">
-              <div className="flex items-start justify-between mb-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-11 h-11 rounded-xl bg-primary flex items-center justify-center text-white font-bold text-sm shrink-0">
-                    {f.anonymous ? "?" : f.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <p className={`text-sm font-medium ${f.anonymous ? "font-mono" : ""}`}>{f.name}</p>
-                      {f.verified && <CheckCircle2 size={13} className="text-green-400" />}
+          {/* Freelancer Grid Listesi */}
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+            {freelancers.map((freelancer) => (
+              <Card key={freelancer.id} className="p-6 bg-card border-border/50 hover:border-primary/30 transition-all duration-300 group">
+
+                {/* Kart Üst Kısım: Cüzdan & Rozetler */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    {/* Avatar Yerine Hexagon Web3 İkonu */}
+                    <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center border border-border group-hover:border-primary/50 group-hover:bg-primary/10 transition-colors">
+                      <Hexagon size={24} className="text-muted-foreground group-hover:text-primary transition-colors" />
                     </div>
-                    <p className="text-xs text-primary">{f.title}</p>
+                    <div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-mono text-sm font-semibold">{freelancer.wallet}</span>
+                        {freelancer.isVerified && (
+                          <span title="Kimliği Doğrulanmış">
+                            <ShieldCheck size={14} className="text-green-500" />
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground mt-0.5">{freelancer.role}</p>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-1">
-                  <Star size={12} className="text-yellow-400 fill-yellow-400" />
-                  <span className="text-xs font-medium">{f.rating}</span>
+
+                {/* Güven Skoru */}
+                <div className="mb-5 p-3 rounded-xl bg-secondary/30 border border-border/40 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Code2 size={16} className="text-primary" />
+                    <span className="text-xs font-medium">Başarılı Sözleşme</span>
+                  </div>
+                  <Badge variant="outline" className="font-mono font-bold bg-background border-primary/20 text-primary">
+                    {freelancer.trustScore} İşlem
+                  </Badge>
                 </div>
-              </div>
 
-              <div className="flex flex-wrap gap-1.5 mb-4">
-                {f.skills.map((s) => (
-                  <Badge key={s} className="bg-secondary text-muted-foreground border-border text-xs">{s}</Badge>
-                ))}
-              </div>
+                {/* Yetenekler */}
+                <div className="mb-6 flex flex-wrap gap-1.5">
+                  {freelancer.skills.map((skill) => (
+                    <Badge key={skill} variant="secondary" className="text-[10px] bg-secondary/50 text-muted-foreground border-none">
+                      {skill}
+                    </Badge>
+                  ))}
+                </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{f.jobs} tamamlanan iş</span>
-                <Link href="/connect">
-                  <Button size="sm" variant="outline" className="border-border gap-1 text-xs group-hover:border-primary/50 group-hover:text-primary transition-all">
-                    İletişime Geç <ArrowUpRight size={12} />
+                {/* Kart Alt Kısım: Linkler ve Buton */}
+                <div className="flex items-center justify-between pt-4 border-t border-border/50">
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    {freelancer.links.github && <Globe size={18} className="hover:text-foreground cursor-pointer transition-colors" />}
+                    {freelancer.links.figma && <Palette size={18} className="hover:text-foreground cursor-pointer transition-colors" />}
+                  </div>
+                  <Button size="sm" className="gap-1.5 bg-background border border-primary/30 hover:bg-primary/10 text-foreground transition-all">
+                    Profili İncele <ExternalLink size={14} />
                   </Button>
-                </Link>
-              </div>
-            </Card>
-          ))}
+                </div>
+              </Card>
+            ))}
+          </div>
+
         </div>
-      </div>
+      </main>
     </div>
   );
 }
