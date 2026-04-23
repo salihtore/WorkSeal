@@ -5,6 +5,8 @@ use sui::balance::{Self, Balance};
 use sui::clock::{Self, Clock};
 use sui::sui::SUI;
 use sui::coin::{Self, Coin};
+use sui::event;
+// use sui::object::{Self, ID, UID};
 
 
 // ========= ERRORS =========
@@ -20,6 +22,7 @@ const EStatusNotActive: u64 = 8;
 const EMilestoneNotCompleted: u64 = 9;
 const EAlreadyPaid: u64 = 10;
 const ENotActive: u64 = 11;
+const EStatusNotAvtive: u64 = 12;
 
 
 // ========= STRUCTS =========
@@ -122,8 +125,15 @@ public fun create_contract(
         dispute_history: vector::empty<DisputeRecord>(),
     };
 
+    event::emit(ContractCreatedEvent{
+        contract_id: object::id(&contract),
+        creator: tx_context::sender(ctx),
+        client: client,
+    });
+
     transfer::share_object(contract);
 }
+
 
 
 public fun fund_contract(
@@ -148,6 +158,12 @@ public fun fund_contract(
 
 
     contract.status = 1;
+
+    event::emit(ContractFundedEvent{
+        contract_id: object::id(contract),
+        amount: payment_amount
+    });
+
 }
 
 
@@ -157,6 +173,8 @@ public fun submit_milestone(
     ctx: &TxContext,
 ){
     assert!(tx_context::sender(ctx) == contract.freelancer, ENotFreelancer);
+
+    assert!(contract.status == 1,EStatusNotAvtive);
 
     let len = vector::length(&contract.milestones);
     assert!(milestone_index < len, EInvalidMilestoneIndex);
@@ -197,6 +215,17 @@ public fun approve_and_release_funds(
             contract.status = 2
         };
 
+
+        let milestone = vector::borrow(&contract.milestones, milestone_index);
+        let release_amount = milestone.amount;
+
+        event::emit(PaymentReleasedEvent{
+
+            contract_id: object::id(contract),
+            freelancer: contract.freelancer,
+            amount: release_amount
+
+        });
         
 
 }
@@ -245,7 +274,36 @@ public fun raise_dispute(
 
     vector::push_back(&mut contract.dispute_history, dispute);
 
+    event::emit(DisputeRaisedEvent{
+        contract_id: object::id(contract),
+        raised_by: sender,
+        reason: reason
+    });
+
 }
 
 
 // ========= EVENTS ==========
+
+public struct ContractCreatedEvent has copy, drop{
+    contract_id: ID,
+    creator: address,
+    client: address
+}
+
+public struct ContractFundedEvent has copy, drop{
+    contract_id: ID,
+    amount: u64
+}
+
+public struct PaymentReleasedEvent has copy, drop{
+    contract_id: ID,
+    freelancer: address,
+    amount: u64
+}
+
+public struct DisputeRaisedEvent has copy, drop{
+    contract_id: ID,
+    raised_by: address,
+    reason: String,
+}
