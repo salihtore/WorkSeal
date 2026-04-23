@@ -4,11 +4,19 @@ use std::string::String;
 use sui::balance::{Self, Balance};
 use sui::clock::{Self, Clock};
 use sui::sui::SUI;
+use sui::coin::{Self, Coin};
+
 
 // ========= EVENTS ==========
 
 // ========= ERRORS =========
 const EVectorLengthMismatch: u64 = 1;
+const ENotAuthorized: u64 = 2;
+const EAlreadyFunded: u64 = 3;
+const ENotFreelancer: u64 = 4;
+const EInvalidMilestoneIndex: u64 = 5;
+const EMilestoneAlreadyCompleted: u64 = 6;
+const EInvalidAmount: u64 = 7;
 
 // ========= STRUCTS =========
 
@@ -111,3 +119,46 @@ public fun create_contract(
 
     transfer::share_object(contract);
 }
+
+
+public fun fund_contract(
+    contract: &mut WorkContract,
+    payment: Coin<SUI>,
+    ctx: &mut TxContext,
+){
+
+    // 1-) sadece musteri fonlayabilir
+    assert!(tx_context::sender(ctx) == contract.client, ENotAuthorized);
+
+    // 2-) sozlesme henuz fonlanmamis olmali
+    assert!(contract.status == 0, EAlreadyFunded);
+
+    // 3-) gonderilen miktar toplam butceye esit olmali
+    let payment_amount = coin::value(&payment);
+    assert!(payment_amount == contract.total_budget, EInvalidAmount);
+
+    // 4-) coini balance'a cevir
+    let payment_balance = coin::into_balance(payment);
+    balance::join(&mut contract.escrow_vault, payment_balance);
+
+    // 5-) sozlesmeyi aktif hale getir
+    contract.status = 1;
+}
+
+
+public fun submit_milestone(
+    contract: &mut WorkContract,
+    milestone_index: u64,
+    ctx: &TxContext,
+){
+    assert!(tx_context::sender(ctx) == contract.freelancer, ENotFreelancer);
+
+    let len = vector::length(&contract.milestones);
+    assert!(milestone_index < len, EInvalidMilestoneIndex);
+
+    let milestone = vector::borrow_mut(&mut contract.milestones, milestone_index);
+
+    assert!(!milestone.is_completed, EMilestoneAlreadyCompleted);
+    milestone.is_completed = true;
+}
+
