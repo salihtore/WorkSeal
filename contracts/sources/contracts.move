@@ -7,9 +7,8 @@ use sui::sui::SUI;
 use sui::coin::{Self, Coin};
 
 
-// ========= EVENTS ==========
-
 // ========= ERRORS =========
+
 const EVectorLengthMismatch: u64 = 1;
 const ENotAuthorized: u64 = 2;
 const EAlreadyFunded: u64 = 3;
@@ -17,10 +16,14 @@ const ENotFreelancer: u64 = 4;
 const EInvalidMilestoneIndex: u64 = 5;
 const EMilestoneAlreadyCompleted: u64 = 6;
 const EInvalidAmount: u64 = 7;
+const EStatusNotActive: u64 = 8;
+const EMilestoneNotCompleted: u64 = 9;
+const EAlreadyPaid: u64 = 10;
+const ENotActive: u64 = 11;
+
 
 // ========= STRUCTS =========
 
-// admincap : anlasmazliklar icin hakemde kullanilacak
 public struct AdminCap has key {
     id: UID,
 }
@@ -32,32 +35,33 @@ fun init(ctx: &mut TxContext) {
     transfer::transfer(admin_cap, tx_context::sender(ctx));
 }
 
-// ana is structı
+
 #[allow(unused_field)]
 public struct WorkContract has key, store {
     id: UID,
     title: String,
     description: String,
-    freelancer: address, //isi alan kisi
-    client: address, //isi veren kisi
+    freelancer: address, 
+    client: address, 
     total_budget: u64, // MIST
-    escrow_vault: Balance<SUI>, //isverenin yatırdıgı paranin kilitlendigi kasa
-    status: u8, // 0, 1, 2, 3 : bekliyor, aktif, tamamlandi, ihtilaf-anlasmazlik
-    milestones: vector<Milestone>, //is asamalari
-    deadline: u64, //bitis tarihi
-    created_at: u64, //sozlesme tarihi
+    escrow_vault: Balance<SUI>, 
+    status: u8, // 0, 1, 2, 3 
+    milestones: vector<Milestone>, 
+    deadline: u64, 
+    created_at: u64, 
+    dispute_history: vector<DisputeRecord>,
 }
 
-// asamali islerin odemelerini kontrol edecek olan yapi
+
 #[allow(unused_field)]
 public struct Milestone has store {
     title: String,
-    amount: u64, //bu asama tamamlandiginda freelancera odenecek tutar
-    is_completed: bool, //is freelancer tarafindan teslim edildi mi?
-    is_paid: bool, //isveren onaylayip parayi serbest birakti mi?
+    amount: u64, 
+    is_completed: bool, 
+    is_paid: bool, 
 }
 
-// ihtilaf-anlasmazlik kaydi
+
 #[allow(unused_field)]
 public struct DisputeRecord has store {
     raised_by: address, //sikayeti olusturan
@@ -73,8 +77,8 @@ public fun create_contract(
     description: String,
     client: address,
     deadline_ms: u64,
-    milestone_titles: vector<String>, //is parcaciklari basliklari
-    milestone_amounts: vector<u64>, // parca basina para
+    milestone_titles: vector<String>, 
+    milestone_amounts: vector<u64>, 
     clock: &Clock,
     ctx: &mut TxContext,
 ) {
@@ -89,7 +93,7 @@ public fun create_contract(
         let m_title = *vector::borrow(&milestone_titles, i);
         let m_amount = *vector::borrow(&milestone_amounts, i);
 
-        //butceyi toplayarak ilerle
+
         total_budget = total_budget + m_amount;
 
         let milestone = Milestone {
@@ -115,6 +119,7 @@ public fun create_contract(
         milestones,
         deadline: deadline_ms,
         created_at: clock::timestamp_ms(clock),
+        dispute_history: vector::empty<DisputeRecord>(),
     };
 
     transfer::share_object(contract);
@@ -127,21 +132,21 @@ public fun fund_contract(
     ctx: &mut TxContext,
 ){
 
-    // 1-) sadece musteri fonlayabilir
+
     assert!(tx_context::sender(ctx) == contract.client, ENotAuthorized);
 
-    // 2-) sozlesme henuz fonlanmamis olmali
+
     assert!(contract.status == 0, EAlreadyFunded);
 
-    // 3-) gonderilen miktar toplam butceye esit olmali
+
     let payment_amount = coin::value(&payment);
     assert!(payment_amount == contract.total_budget, EInvalidAmount);
 
-    // 4-) coini balance'a cevir
+
     let payment_balance = coin::into_balance(payment);
     balance::join(&mut contract.escrow_vault, payment_balance);
 
-    // 5-) sozlesmeyi aktif hale getir
+
     contract.status = 1;
 }
 
@@ -162,3 +167,85 @@ public fun submit_milestone(
     milestone.is_completed = true;
 }
 
+public fun approve_and_release_funds(
+    contract: &mut WorkContract,
+    milestone_index: u64,
+    ctx: &mut TxContext
+){
+        assert!(tx_context::sender(ctx) == contract.client, ENotAuthorized);
+
+        assert!(contract.status == 1, EStatusNotActive);
+
+        let milestone_len = vector::length(&contract.milestones);
+        assert!(milestone_index < milestone_len, EInvalidMilestoneIndex);
+
+        let ml_ref = vector::borrow_mut(&mut contract.milestones, milestone_index);
+
+        assert!(ml_ref.is_completed == true, EMilestoneNotCompleted);
+
+        assert!(ml_ref.is_paid == false, EAlreadyPaid);
+
+        let payment_balance = balance::split(&mut contract.escrow_vault, ml_ref.amount);
+
+        let payment_coin = coin::from_balance(payment_balance, ctx);
+
+        transfer::public_transfer(payment_coin, contract.freelancer);
+
+        ml_ref.is_paid = true;
+
+        if (all_milestones_paid(contract)){
+            contract.status = 2
+        };
+
+        
+
+}
+
+// helper function : all milestones is paid ?
+fun all_milestones_paid(contract: &WorkContract): bool{
+    let len = vector::length(&contract.milestones);
+    let mut i = 0;
+
+    while (i < len){
+        let milestone = vector::borrow(&contract.milestones, i);
+        if (!milestone.is_paid){
+            return false
+        };
+
+        i = i + 1;
+    };
+
+    true
+
+}
+
+
+public fun raise_dispute(
+    contract: &mut WorkContract,
+    reason: String,
+    clock: &Clock,
+    ctx: &mut TxContext,
+){
+    let sender = tx_context::sender(ctx);
+    assert!(
+        sender == contract.freelancer || sender == contract.client, ENotAuthorized
+    );
+
+    assert!(contract.status == 1, ENotActive);
+
+    contract.status = 3;
+
+    let dispute = DisputeRecord {
+
+        raised_by: sender,
+        reason,
+        timestamp: clock::timestamp_ms(clock),
+
+    };
+
+    vector::push_back(&mut contract.dispute_history, dispute);
+
+}
+
+
+// ========= EVENTS ==========
