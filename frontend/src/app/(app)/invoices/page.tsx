@@ -5,14 +5,35 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Receipt, Search, Download, CheckCircle2, Copy } from "lucide-react";
 import { Input } from "@/components/ui/input";
-
-const mockInvoices: any[] = [];
+import { useEffect } from "react";
+import { useContracts } from "@/hooks/useContracts";
+import { mistToSui, formatTimestamp } from "@/types";
+import { useCurrentAccount } from "@mysten/dapp-kit";
+import { Loader2 } from "lucide-react";
 
 export default function InvoicesPage() {
+  const account = useCurrentAccount();
+  const { contracts, loading, fetchAllContracts } = useContracts(account?.address);
+
+  useEffect(() => {
+    fetchAllContracts();
+  }, [fetchAllContracts]);
+  
+  // Sözleşmelerdeki ödenmiş (is_paid) her aşamayı bir fatura olarak göster
+  const invoices = contracts.flatMap(c => 
+    c.milestones.filter(m => m.is_paid).map((m, idx) => ({
+      id: `WSL-${c.id.slice(0, 4)}-${idx + 1}`,
+      contractId: c.id,
+      contractTitle: `${c.title} - ${m.title}`,
+      date: formatTimestamp(c.created_at), // Milestone bazlı tarih olsa daha iyi ama şimdilik c.created_at
+      amount: `${mistToSui(m.amount)} SUI`,
+      status: "paid"
+    }))
+  );
 
   const handleDownload = (id: string) => {
     // Simüle eylemi
-    alert(`${id} faturası PDF olarak indiriliyor... (Mock)`);
+    alert(`${id} faturası PDF olarak indiriliyor...`);
   };
 
   return (
@@ -38,7 +59,12 @@ export default function InvoicesPage() {
         </div>
       </div>
 
-      {mockInvoices.length > 0 ? (
+      {loading ? (
+        <Card className="p-16 bg-card border-border/50 flex flex-col items-center justify-center text-center shadow-lg">
+          <Loader2 className="animate-spin text-primary mb-4" size={40} />
+          <p className="text-sm text-muted-foreground">Faturalarınız yükleniyor...</p>
+        </Card>
+      ) : invoices.length > 0 ? (
         <Card className="bg-card border-border/50 overflow-hidden shadow-lg">
           <div className="overflow-x-auto">
             <table className="w-full text-sm text-left">
@@ -53,16 +79,16 @@ export default function InvoicesPage() {
                 </tr>
               </thead>
               <tbody>
-                {mockInvoices.map((inv) => (
+                {invoices.map((inv) => (
                   <tr key={inv.id} className="border-b border-border/30 hover:bg-secondary/20 transition-colors group">
                     <td className="px-6 py-5 flex items-center gap-2">
                       <Receipt size={16} className="text-muted-foreground group-hover:text-primary transition-colors" />
                       <span className="font-mono font-medium">{inv.id}</span>
-                      <button className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground">
+                      <button className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-foreground" onClick={() => {navigator.clipboard.writeText(inv.id); alert('Kopyalandı!');}}>
                         <Copy size={12} />
                       </button>
                     </td>
-                    <td className="px-6 py-5 text-muted-foreground">{inv.contract}</td>
+                    <td className="px-6 py-5 text-muted-foreground">{inv.contractTitle}</td>
                     <td className="px-6 py-5 text-muted-foreground">{inv.date}</td>
                     <td className="px-6 py-5 font-mono font-bold">{inv.amount}</td>
                     <td className="px-6 py-5">

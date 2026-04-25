@@ -11,16 +11,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, ChevronRight, ChevronLeft, FileText, Shield, CheckCircle2, AlertCircle } from "lucide-react";
+import { Plus, Trash2, ChevronRight, ChevronLeft, FileText, Shield, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { formatMistToSui, parseSuiToMist } from "@/lib/utils/format";
+
+// EKLENEN: Sui Dapp Kit ve Yazdığımız Hook Importları
+import { useCurrentAccount } from "@mysten/dapp-kit";
+import { useWorkSealTransactions } from "@/hooks/useWorkSealTransactions";
 
 const steps = ["Temel Bilgiler", "Maddeler", "Ödeme Özeti", "Önizleme"];
 
-// 1. Zod şeması tanımı
+// 1. Zod şeması tanımı (clientWallet tamamen kaldırıldı)
 const contractSchema = z.object({
   title: z.string().min(5, "Başlık en az 5 karakter olmalıdır."),
   description: z.string().min(10, "Açıklama çok kısa, lütfen detaylandırın."),
-  clientWallet: z.string().regex(/^0x[a-fA-F0-9]{64}$/, "Geçerli bir Sui cüzdan adresi girin (0x... 64 Karakter)"),
   deadline: z.string().min(1, "Bitiş tarihi seçilmelidir"),
   identityPreference: z.enum(["any", "verified", "anonymous"]),
   milestones: z.array(
@@ -38,6 +41,11 @@ type ContractFormValues = z.infer<typeof contractSchema>;
 
 export default function NewContractPage() {
   const [step, setStep] = useState(0);
+  
+  // EKLENEN: Yüklenme Durumu (Loading State) ve Sui Hook'ları
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const account = useCurrentAccount();
+  const { createContract } = useWorkSealTransactions();
 
   // 2. React Hook Form Entegrasyonu
   const {
@@ -53,7 +61,6 @@ export default function NewContractPage() {
     defaultValues: {
       title: "",
       description: "",
-      clientWallet: "",
       deadline: "",
       identityPreference: "any",
       milestones: [{ title: "", amount: "", deadline: "" }],
@@ -73,10 +80,10 @@ export default function NewContractPage() {
   }, 0).toLocaleString("en-US", { maximumFractionDigits: 4 });
 
   const handleNextStep = async () => {
-    // Bulunulan adımı triggerlayıp hata var mı kontrol et
     let isValid = false;
     if (step === 0) {
-      isValid = await trigger(["title", "description", "clientWallet", "deadline", "identityPreference"]);
+      // clientWallet trigger'dan da çıkarıldı
+      isValid = await trigger(["title", "description", "deadline", "identityPreference"]);
     } else if (step === 1) {
       isValid = await trigger("milestones");
     } else {
@@ -88,9 +95,42 @@ export default function NewContractPage() {
     }
   };
 
-  const onSubmit = (data: ContractFormValues) => {
-    console.log("On-Chain Submission Data:", data);
-    alert("Blockchain simülasyonu: Sözleşme imzalama isteği gönderildi.\n(Console'a bakınız)");
+  // EKLENEN/DEĞİŞTİRİLEN: Gerçek Blockchain İşleminin Yapıldığı Yer
+  const onSubmit = async (data: ContractFormValues) => {
+    if (!account) {
+      alert("İşlem yapabilmek için lütfen sağ üstten Web3 cüzdanınızı bağlayın.");
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      // 1. Son teslim tarihini Unix Zaman Damgasına (Milisaniye) çeviriyoruz
+      const deadlineMs = new Date(data.deadline).getTime();
+
+      // 2. Milestones verilerini kontratın beklediği iki ayrı diziye ayırıyoruz
+      const milestoneTitles = data.milestones.map((m) => m.title);
+      const milestoneAmounts = data.milestones.map((m) => parseSuiToMist(m.amount));
+
+      // 3. Yazdığımız hook üzerinden Cüzdan onayı (Sign) istiyoruz ve işlemi gönderiyoruz
+      const txResult = await createContract({
+        title: data.title,
+        description: data.description,
+        client: account.address, // <-- DEĞİŞTİ: Artık bağlı cüzdan otomatik olarak müşteri oluyor
+        deadline_ms: deadlineMs,
+        milestone_titles: milestoneTitles,
+        milestone_amounts: milestoneAmounts,
+      });
+
+      console.log("İşlem başarılı, Tx Bilgileri:", txResult);
+      alert("Tebrikler! Sözleşme blockchain ağına başarıyla kaydedildi.");
+      
+    } catch (error: any) {
+      console.error("Sözleşme oluşturulurken hata:", error);
+      alert(`Bir hata oluştu: ${error?.message || "İşlem reddedildi veya ağ hatası."}`);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -101,7 +141,7 @@ export default function NewContractPage() {
       </div>
 
       {/* Adım göstergesi */}
-      <div className="flex items-center gap-2 mb-8">
+      <div className="flex items-center gap-2 mb-8 flex-wrap">
         {steps.map((s, i) => (
           <div key={s} className="flex items-center gap-2">
             <div
@@ -117,7 +157,7 @@ export default function NewContractPage() {
               {s}
             </div>
             {i < steps.length - 1 && (
-              <div className={`h-[2px] w-8 rounded-full transition-all duration-300 ${i < step ? "bg-green-500/50" : "bg-border"}`} />
+              <div className={`h-[2px] w-4 sm:w-8 rounded-full transition-all duration-300 ${i < step ? "bg-green-500/50" : "bg-border"}`} />
             )}
           </div>
         ))}
@@ -148,16 +188,8 @@ export default function NewContractPage() {
                 {errors.description && <p className="text-[10px] text-destructive mt-1">{errors.description.message}</p>}
               </div>
 
+              {/* clientWallet inputu kaldırıldı, layout düzeni bozulmaması için deadline ve identityPreference yan yana alındı */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <Label className="text-sm font-medium mb-2 block">Müşteri Cüzdan Adresi</Label>
-                  <Input 
-                    {...register("clientWallet")}
-                    placeholder="0x..." 
-                    className={`bg-background/50 font-mono text-sm ${errors.clientWallet ? "border-destructive focus-visible:ring-destructive" : "focus-visible:ring-primary/50"}`} 
-                  />
-                  {errors.clientWallet && <p className="text-[10px] text-destructive mt-1 flex items-center gap-1"><AlertCircle size={10} /> {errors.clientWallet.message}</p>}
-                </div>
                 <div>
                   <Label className="text-sm font-medium mb-2 block">Son Teslim Tarihi</Label>
                   <Input 
@@ -167,29 +199,29 @@ export default function NewContractPage() {
                   />
                   {errors.deadline && <p className="text-[10px] text-destructive mt-1">{errors.deadline.message}</p>}
                 </div>
-              </div>
 
-              <div>
-                <Label className="text-sm font-medium mb-2 block">Müşteri Kimlik Tercihi</Label>
-                <div className="grid grid-cols-3 gap-3">
-                  {[
-                    { val: "any", label: "Farketmez" },
-                    { val: "verified", label: "Doğrulanmış (KYC)" },
-                    { val: "anonymous", label: "Anonim Web3" },
-                  ].map(({ val, label }) => (
-                    <button
-                      type="button"
-                      key={val}
-                      onClick={() => setValue("identityPreference", val as "any"|"verified"|"anonymous", { shouldValidate: true })}
-                      className={`p-3 rounded-xl border text-xs font-semibold transition-all duration-200 ${
-                        watchAll.identityPreference === val
-                          ? "border-primary bg-primary/10 text-primary shadow-[0_0_10px_rgba(var(--primary),0.2)]"
-                          : "border-border/50 text-muted-foreground hover:border-primary/30 hover:bg-secondary/50"
-                      }`}
-                    >
-                      {label}
-                    </button>
-                  ))}
+                <div>
+                  <Label className="text-sm font-medium mb-2 block">Müşteri Kimlik Tercihi</Label>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    {[
+                      { val: "any", label: "Farketmez" },
+                      { val: "verified", label: "Doğrulanmış" },
+                      { val: "anonymous", label: "Anonim" },
+                    ].map(({ val, label }) => (
+                      <button
+                        type="button"
+                        key={val}
+                        onClick={() => setValue("identityPreference", val as "any"|"verified"|"anonymous", { shouldValidate: true })}
+                        className={`p-2 rounded-xl border text-xs font-semibold transition-all duration-200 ${
+                          watchAll.identityPreference === val
+                            ? "border-primary bg-primary/10 text-primary shadow-[0_0_10px_rgba(var(--primary),0.2)]"
+                            : "border-border/50 text-muted-foreground hover:border-primary/30 hover:bg-secondary/50"
+                        }`}
+                      >
+                        {label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
@@ -303,9 +335,10 @@ export default function NewContractPage() {
               </div>
 
               <div className="grid grid-cols-2 gap-4">
-                 <div className="p-4 rounded-xl bg-secondary/30 border border-border/50">
+                 <div className="p-4 rounded-xl bg-secondary/30 border border-border/50 overflow-hidden">
                    <p className="text-xs text-muted-foreground mb-1">Müşteri Cüzdanı</p>
-                   <p className="text-sm font-mono truncate">{watchAll.clientWallet}</p>
+                   {/* DEĞİŞTİRİLEN: Form verisi yerine doğrudan bağlı olan cüzdan adresini gösteriyoruz */}
+                   <p className="text-sm font-mono truncate">{account?.address || "Bağlı Cüzdan Yok"}</p>
                  </div>
                  <div className="p-4 rounded-xl bg-secondary/30 border border-border/50">
                    <p className="text-xs text-muted-foreground mb-1">Bitiş Tarihi</p>
@@ -339,7 +372,7 @@ export default function NewContractPage() {
             <Button 
               type="button"
               onClick={() => setStep((p) => p - 1)} 
-              disabled={step === 0} 
+              disabled={step === 0 || isSubmitting} 
               variant="outline" 
               className="gap-2 px-6"
             >
@@ -355,8 +388,16 @@ export default function NewContractPage() {
                 İleri <ChevronRight size={16} />
               </Button>
             ) : (
-              <Button type="submit" className="bg-primary hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(var(--primary),0.5)] text-primary-foreground gap-2 px-8 transition-all">
-                Sözleşmeyi İmzala & Gönder <CheckCircle2 size={18} />
+              <Button 
+                type="submit" 
+                disabled={isSubmitting} 
+                className="bg-primary hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(var(--primary),0.5)] text-primary-foreground gap-2 px-8 transition-all"
+              >
+                {isSubmitting ? (
+                  <> İşleniyor... <Loader2 className="animate-spin" size={18} /> </>
+                ) : (
+                  <> Sözleşmeyi İmzala & Gönder <CheckCircle2 size={18} /> </>
+                )}
               </Button>
             )}
           </div>

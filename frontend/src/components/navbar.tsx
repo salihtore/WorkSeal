@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { useCurrentAccount, useDisconnectWallet, ConnectButton } from "@mysten/dapp-kit";
+import { useCurrentAccount, useAccounts, useSwitchAccount, useDisconnectWallet, ConnectButton } from "@mysten/dapp-kit";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,8 @@ import {
 
 export default function Navbar() {
   const account = useCurrentAccount();
+  const accounts = useAccounts();
+  const { mutate: switchAccount } = useSwitchAccount();
   const { mutate: disconnect } = useDisconnectWallet();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showWalletMenu, setShowWalletMenu] = useState(false);
@@ -163,6 +165,34 @@ export default function Navbar() {
                 }}>
                   <LogOut size={14} /> Bağlantıyı Kes
                 </Button>
+
+                {/* Hesap Değiştirici (Test için her zaman göster) */}
+                {accounts.length > 0 && (
+                  <>
+                    <div className="h-px bg-border/50 my-1 mx-2"></div>
+                    <div className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                      Hesap Değiştir
+                    </div>
+                    <div className="max-h-40 overflow-y-auto px-1">
+                      {accounts.map((acc) => (
+                        <Button 
+                          key={acc.address}
+                          variant="ghost" 
+                          className={`w-full justify-start gap-2 text-xs h-9 px-2 mb-1 ${acc.address === account?.address ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'hover:bg-secondary/50'}`} 
+                          onClick={() => {
+                            switchAccount({ account: acc });
+                            setShowWalletMenu(false);
+                          }}
+                        >
+                          <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${acc.address === account?.address ? 'bg-primary shadow-[0_0_5px_rgba(var(--primary),0.5)]' : 'bg-muted-foreground/30'}`}></div>
+                          <span className="truncate font-mono">
+                            {acc.address.slice(0, 6)}...{acc.address.slice(-4)}
+                          </span>
+                        </Button>
+                      ))}
+                    </div>
+                  </>
+                )}
               </div>
             )}
           </div>

@@ -4,32 +4,47 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard, FileText, Shield, AlertTriangle,
-  Receipt, User, LogOut, Briefcase,
+  Receipt, User, LogOut, Briefcase, Gavel, Loader2
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDisconnectWallet } from "@mysten/dapp-kit";
+import { useEffect, useMemo } from "react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
-
-
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/contracts", label: "Sözleşmeler", icon: FileText },
-  { href: "/escrow", label: "Ödemeler", icon: Shield },
-  { href: "/disputes", label: "Anlaşmazlıklar", icon: AlertTriangle },
-  { href: "/invoices", label: "Faturalar", icon: Receipt },
-  { href: "/profile", label: "Profil", icon: User },
-];
+import { useContracts } from "@/hooks/useContracts";
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { mutate: disconnect } = useDisconnectWallet();
+  const account = useCurrentAccount();
+  const { isArbitrator, loading } = useContracts(account?.address);
 
   const handleLogout = () => {
     disconnect();
     document.cookie = "wallet_connected=; path=/; max-age=0";
     window.location.href = "/";
   };
-  const account = useCurrentAccount();
+
+  // Menü öğelerini role göre belirle
+  const navItems = useMemo(() => {
+    // Yüklenirken veya hesap yokken boş veya temel menü gösterilebilir
+    if (loading && !isArbitrator) return []; 
+
+    if (isArbitrator) {
+      return [
+        { href: "/arbitrator", label: "Hakem Portalı", icon: Gavel },
+        { href: "/profile", label: "Profil", icon: User },
+      ];
+    }
+
+    return [
+      { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/contracts", label: "Sözleşmeler", icon: FileText },
+      { href: "/escrow", label: "Ödemeler", icon: Shield },
+      { href: "/disputes", label: "Anlaşmazlıklar", icon: AlertTriangle },
+      { href: "/invoices", label: "Faturalar", icon: Receipt },
+      { href: "/profile", label: "Profil", icon: User },
+    ];
+  }, [isArbitrator, loading]);
 
   return (
     <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col border-r border-border bg-card z-40">
@@ -41,24 +56,30 @@ export default function Sidebar() {
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1">
-        {navItems.map(({ href, label, icon: Icon }) => {
-          const active = pathname === href || pathname.startsWith(href + "/");
-          return (
-            <Link
-              key={href}
-              href={href}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
-                active
-                  ? "bg-accent text-accent-foreground"
-                  : "text-muted-foreground hover:bg-secondary hover:text-foreground"
-              )}
-            >
-              <Icon size={18} />
-              {label}
-            </Link>
-          );
-        })}
+        {loading && navItems.length === 0 ? (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 size={20} className="animate-spin text-muted-foreground/50" />
+          </div>
+        ) : (
+          navItems.map(({ href, label, icon: Icon }) => {
+            const active = pathname === href || pathname.startsWith(href + "/");
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                  active
+                    ? "bg-accent text-accent-foreground"
+                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                )}
+              >
+                <Icon size={18} />
+                {label}
+              </Link>
+            );
+          })
+        )}
       </nav>
 
       {/* <div className="px-3 py-4 border-t border-border">

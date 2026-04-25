@@ -5,9 +5,67 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Shield, ArrowDownLeft, ArrowUpRight, Plus, ExternalLink, Activity, Coins } from "lucide-react";
 import Link from "next/link";
+import { useEffect } from "react";
+import { useContracts } from "@/hooks/useContracts";
+import { mistToSui, formatTimestamp } from "@/types";
+import { useCurrentAccount } from "@mysten/dapp-kit";
+import { Loader2 } from "lucide-react";
 
 export default function EscrowPage() {
-  const escrows: any[] = [];
+  const account = useCurrentAccount();
+  const { contracts, loading, fetchAllContracts } = useContracts(account?.address);
+
+  useEffect(() => {
+    fetchAllContracts();
+  }, [fetchAllContracts]);
+
+  const address = account?.address;
+
+  // Hesaplamalar
+  let totalLocked = BigInt(0);
+  let totalReceived = BigInt(0);
+  let totalSent = BigInt(0);
+
+  const transactions: any[] = [];
+
+  if (address && contracts) {
+    contracts.forEach(contract => {
+      const isClient = contract.client === address;
+      const isFreelancer = contract.freelancer === address;
+
+      // Sadece aktif ve kilitli olanları veya ödenenleri hesapla
+      contract.milestones.forEach((m, i) => {
+        if (m.is_paid) {
+          if (isClient) totalSent += m.amount;
+          if (isFreelancer) totalReceived += m.amount;
+          
+          transactions.push({
+            id: `${contract.id.slice(0,6)}-${i}`,
+            contractId: contract.id,
+            counterparty: isClient ? contract.freelancer : contract.client,
+            amount: mistToSui(m.amount),
+            date: formatTimestamp(contract.created_at), // Ödeme tarihi normalde eventten gelir, şimdilik kontrat tarihi
+            type: isClient ? "sent" : "received",
+            status: "released"
+          });
+        } else if (contract.status === 1) { // Aktif kontratsa kilitlidir
+          totalLocked += m.amount;
+          
+          transactions.push({
+            id: `${contract.id.slice(0,6)}-${i}`,
+            contractId: contract.id,
+            counterparty: isClient ? contract.freelancer || "Bekleniyor" : contract.client,
+            amount: mistToSui(m.amount),
+            date: formatTimestamp(contract.created_at),
+            type: "locked",
+            status: "locked"
+          });
+        }
+      });
+    });
+  }
+
+  const hasTransactions = transactions.length > 0;
 
   return (
     <div className="max-w-6xl mx-auto space-y-8">
@@ -36,7 +94,7 @@ export default function EscrowPage() {
             </div>
             <span className="text-sm font-medium text-muted-foreground">Kilitli Tutar (Escrow)</span>
           </div>
-          <p className="text-3xl font-mono font-bold text-foreground relative z-10">0.00 <span className="text-lg text-muted-foreground font-sans">SUI</span></p>
+          <p className="text-3xl font-mono font-bold text-foreground relative z-10">{mistToSui(totalLocked)} <span className="text-lg text-muted-foreground font-sans">SUI</span></p>
         </Card>
 
         <Card className="p-6 bg-gradient-to-br from-card to-card/50 border-green-500/20 relative overflow-hidden group hover:border-green-500/40 transition-all">
@@ -47,7 +105,7 @@ export default function EscrowPage() {
             </div>
             <span className="text-sm font-medium text-muted-foreground">Serbest Bırakılan (Gelen)</span>
           </div>
-          <p className="text-3xl font-mono font-bold text-foreground relative z-10">0.00 <span className="text-lg text-muted-foreground font-sans">SUI</span></p>
+          <p className="text-3xl font-mono font-bold text-foreground relative z-10">{mistToSui(totalReceived)} <span className="text-lg text-muted-foreground font-sans">SUI</span></p>
         </Card>
 
         <Card className="p-6 bg-gradient-to-br from-card to-card/50 border-border/50 relative overflow-hidden group hover:border-foreground/20 transition-all">
@@ -58,12 +116,17 @@ export default function EscrowPage() {
             </div>
             <span className="text-sm font-medium text-muted-foreground">Gönderilen (Müşteriysen)</span>
           </div>
-          <p className="text-3xl font-mono font-bold text-foreground relative z-10">0.00 <span className="text-lg text-muted-foreground font-sans">SUI</span></p>
+          <p className="text-3xl font-mono font-bold text-foreground relative z-10">{mistToSui(totalSent)} <span className="text-lg text-muted-foreground font-sans">SUI</span></p>
         </Card>
       </div>
 
       {/* Escrow İşlemleri Tablosu */}
-      {escrows.length > 0 ? (
+      {loading ? (
+        <Card className="p-16 bg-card border-border/50 flex flex-col items-center justify-center text-center">
+          <Loader2 className="animate-spin text-primary mb-4" size={40} />
+          <p className="text-sm text-muted-foreground">İşlemleriniz yükleniyor...</p>
+        </Card>
+      ) : hasTransactions ? (
         <Card className="bg-card border-border/50 overflow-hidden">
           <div className="p-6 border-b border-border/50 flex items-center justify-between">
             <h2 className="text-lg font-semibold flex items-center gap-2">
@@ -86,12 +149,12 @@ export default function EscrowPage() {
                 </tr>
               </thead>
               <tbody>
-                {escrows.map((tx) => (
+                {transactions.map((tx) => (
                   <tr key={tx.id} className="border-b border-border/30 hover:bg-secondary/20 transition-colors">
                     <td className="px-6 py-4 font-mono font-medium">{tx.id}</td>
-                    <td className="px-6 py-4 font-mono text-muted-foreground">{tx.client}</td>
+                    <td className="px-6 py-4 font-mono text-muted-foreground">{tx.counterparty ? `${tx.counterparty.slice(0,6)}...${tx.counterparty.slice(-4)}` : "Belirsiz"}</td>
                     <td className="px-6 py-4 font-mono font-bold flex items-center gap-2">
-                      {tx.type === "received" ? <ArrowDownLeft size={14} className="text-blue-500" /> : tx.type === "released" ? <ArrowDownLeft size={14} className="text-green-500" /> : <ArrowUpRight size={14} className="text-muted-foreground" />}
+                      {tx.type === "received" ? <ArrowDownLeft size={14} className="text-green-500" /> : tx.type === "released" ? <ArrowDownLeft size={14} className="text-green-500" /> : tx.type === "sent" ? <ArrowUpRight size={14} className="text-muted-foreground" /> : <Shield size={14} className="text-blue-500" />}
                       {tx.amount} SUI
                     </td>
                     <td className="px-6 py-4 text-muted-foreground">{tx.date}</td>
@@ -107,9 +170,11 @@ export default function EscrowPage() {
                       )}
                     </td>
                     <td className="px-6 py-4 text-right">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary">
-                        <ExternalLink size={16} />
-                      </Button>
+                      <Link href={`/contracts/${tx.contractId}`}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary">
+                          <ExternalLink size={16} />
+                        </Button>
+                      </Link>
                     </td>
                   </tr>
                 ))}

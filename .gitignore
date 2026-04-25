@@ -1,0 +1,52 @@
+# Dependency directories
+node_modules/
+frontend/node_modules/
+
+# Next.js build output
+.next/
+frontend/.next/
+out/
+frontend/out/
+
+# Build and distribution directories
+dist/
+build/
+frontend/dist/
+frontend/build/
+
+# Sui/Move build output
+contracts/build/
+contracts/.move/
+contracts/Move.lock
+Move.lock
+
+# Environment variables (Sensitive data)
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+frontend/.env*
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+logs/
+*.log
+
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# Testing
+coverage/
+frontend/coverage/
+
+# Temporary files
+tmp/
+temp/

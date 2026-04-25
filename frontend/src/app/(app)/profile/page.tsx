@@ -11,8 +11,11 @@ import { Separator } from "@/components/ui/separator";
 import {
   User, Wallet, Edit3, Save, Plus,
   X, ExternalLink, Eye, EyeOff, CheckCircle2,
-  Trophy, Star, Hexagon, Shield
+  Trophy, Star, Hexagon, Shield, Loader2
 } from "lucide-react";
+import { useContracts } from "@/hooks/useContracts";
+import { useWorkSealTransactions } from "@/hooks/useWorkSealTransactions";
+import { mistToSui } from "@/types";
 
 export default function ProfilePage() {
   const account = useCurrentAccount();
@@ -25,6 +28,32 @@ export default function ProfilePage() {
     bio: "",
     title: "",
   });
+
+  const { contracts, loading, isArbitrator } = useContracts(account?.address);
+  const { registerArbitrator } = useWorkSealTransactions();
+  const address = account?.address;
+
+  const [arbitratorAddress, setArbitratorAddress] = useState("");
+  const [isRegistering, setIsRegistering] = useState(false);
+
+  const handleRegisterArbitrator = async () => {
+    if (!arbitratorAddress) return;
+    try {
+      setIsRegistering(true);
+      await registerArbitrator({ arbitrator_address: arbitratorAddress, max_jobs: 10 });
+      alert("Hakem başarıyla kaydedildi!");
+      setArbitratorAddress("");
+    } catch (e: any) {
+      alert("Hata: " + e.message);
+    } finally {
+      setIsRegistering(false);
+    }
+  };
+
+  // Gerçek On-Chain İstatistikler
+  const completedAsFreelancer = contracts.filter(c => c.status === 2 && c.freelancer === address);
+  const successfulJobs = completedAsFreelancer.length;
+  const totalEarned = completedAsFreelancer.reduce((acc, c) => acc + BigInt(c.total_budget), 0n);
 
   const addSkill = () => {
     if (newSkill.trim() && !skills.includes(newSkill.trim())) {
@@ -128,12 +157,14 @@ export default function ProfilePage() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="p-3 rounded-xl bg-green-500/5 border border-green-500/10 text-center">
                   <p className="text-[10px] text-muted-foreground font-semibold mb-1">Başarılı İş</p>
-                  <p className="font-mono font-bold text-green-500 text-lg">0</p>
+                  <p className="font-mono font-bold text-green-500 text-lg">
+                    {loading ? <Loader2 size={16} className="animate-spin inline-block" /> : successfulJobs}
+                  </p>
                 </div>
                 <div className="p-3 rounded-xl bg-primary/5 border border-primary/10 text-center">
                   <p className="text-[10px] text-muted-foreground font-semibold mb-1">Kazanılan</p>
                   <p className="font-mono font-bold text-primary text-lg flex items-baseline justify-center gap-0.5">
-                    0<span className="text-[10px]"></span>
+                    {loading ? <Loader2 size={16} className="animate-spin inline-block" /> : mistToSui(totalEarned)}<span className="text-[10px]"></span>
                   </p>
                 </div>
               </div>
@@ -222,19 +253,61 @@ export default function ProfilePage() {
              )}
           </Card>
 
-          {/* SUI Sertifikalar (Mock Web3 Element) */}
+          {/* On-Chain Başarımlar */}
           <Card className="p-6 bg-card border-border/50">
             <h2 className="text-lg font-semibold mb-4 text-foreground flex items-center gap-2">
               <Trophy size={18} className="text-primary" /> On-Chain Başarımlar
             </h2>
             <div className="flex flex-col items-center justify-center py-10 text-center rounded-2xl bg-secondary/20 border border-dashed border-border/50">
-              <Trophy size={30} className="text-muted-foreground mb-3" />
-              <h3 className="text-sm font-semibold text-foreground">Henüz on-chain başarım yok</h3>
-              <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-                Sui ağında sözleşme imzalayıp tamamladıkça NFT tabanlı başarı nişanları kazanacaksın.
-              </p>
+              {successfulJobs > 0 ? (
+                <>
+                  <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-3">
+                     <Trophy size={30} className="text-primary" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-foreground">Güvenilir Freelancer</h3>
+                  <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+                    {successfulJobs} sözleşmeyi başarıyla tamamladın.
+                  </p>
+                </>
+              ) : (
+                <>
+                  <Trophy size={30} className="text-muted-foreground mb-3" />
+                  <h3 className="text-sm font-semibold text-foreground">Henüz on-chain başarım yok</h3>
+                  <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+                    Sui ağında sözleşme imzalayıp tamamladıkça on-chain istatistiklerin gelişecek.
+                  </p>
+                </>
+              )}
             </div>
           </Card>
+          
+          {/* Admin Bölümü - Sadece Hakem/Admin yetkisi olanlar görebilir */}
+          {isArbitrator && (
+            <Card className="p-6 bg-gradient-to-br from-card to-card/50 border-primary/20">
+              <h2 className="text-lg font-semibold mb-4 text-foreground flex items-center gap-2">
+                <Shield size={18} className="text-primary" /> Admin: Hakem Kaydı
+              </h2>
+              <p className="text-xs text-muted-foreground mb-4">
+                Sözleşmeyi yayınlayan (AdminCap sahibi) cüzdan ile yeni hakemler tanımlayabilirsiniz.
+              </p>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="0x... (Hakem olacak cüzdan adresi)"
+                  value={arbitratorAddress}
+                  onChange={(e) => setArbitratorAddress(e.target.value)}
+                  className="bg-background border-border/50 text-sm flex-1 font-mono"
+                />
+                <Button 
+                  onClick={handleRegisterArbitrator} 
+                  disabled={isRegistering || !arbitratorAddress}
+                  className="gap-2 bg-primary text-white"
+                >
+                  {isRegistering ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
+                  Tanımla
+                </Button>
+              </div>
+            </Card>
+          )}
         </div>
 
       </div>
