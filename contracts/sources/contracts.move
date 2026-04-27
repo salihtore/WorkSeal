@@ -70,8 +70,8 @@ public struct WorkContract has key, store {
     created_at: u64, 
     dispute_history: vector<DisputeRecord>,
     messages: vector<Message>, // Grup sohbeti
-    client_arbitrator_messages: vector<Message>, // Hakem - Müşteri Özel
-    freelancer_arbitrator_messages: vector<Message>, // Hakem - Freelancer Özel
+    client_arbitrator_messages: vector<Message>, // Hakem - Müşteri 
+    freelancer_arbitrator_messages: vector<Message>, // Hakem - Freelancer 
     arbitrator: Option<address>, // Atanan hakem
 }
 
@@ -372,7 +372,7 @@ public fun raise_dispute(
     vector::push_back(&mut contract.dispute_history, record);
     contract.status = 3; // Disputed
 
-    // OTOMATIK HAKEM ATAMA (Sadece hakem atanmamışsa)
+    // otomatik hakem atama
     if (option::is_none(&contract.arbitrator)) {
         let len = vector::length(&registry.arbitrators);
         if (len > 0) {
@@ -385,7 +385,7 @@ public fun raise_dispute(
                 p.current_jobs = p.current_jobs + 1;
                 registry.next_index = (idx + 1) % len;
 
-                // YENI: Hakem atandı bildirimi
+
                 event::emit(ArbitratorAssignedEvent {
                     contract_id: object::id(contract),
                     arbitrator: p.addr,
@@ -446,14 +446,14 @@ fun internal_resolve(
         // KOMISYON HESABI (%2 hakem ücreti)
         let commission_amount = (remaining_balance * 2) / 100;
 
-        // Hakeme ödeme (Eğer atanmış bir hakem varsa)
+        // hakem icin komisyon odemesi
         if (option::is_some(&contract.arbitrator)) {
             let arb_addr = *option::borrow(&contract.arbitrator);
             let commission_balance = balance::split(&mut contract.escrow_vault, commission_amount);
             let commission_coin = coin::from_balance(commission_balance, ctx);
             transfer::public_transfer(commission_coin, arb_addr);
 
-            // Hakemin kotasını bir azalt (iş bitti)
+            // Hakemin kotasını bir azalt 
             let mut i = 0;
             let len = vector::length(&registry.arbitrators);
             while (i < len) {
@@ -466,14 +466,14 @@ fun internal_resolve(
             };
         };
 
-        // Kazanan tarafa kalan tüm ödemeyi gönder
+        // haklı tarafın odemesi
         let final_balance_val = balance::value(&contract.escrow_vault);
         let payment_balance = balance::split(&mut contract.escrow_vault, final_balance_val);
         let payment_coin = coin::from_balance(payment_balance, ctx);
         transfer::public_transfer(payment_coin, winner);
     };
     
-    contract.status = 2; // Completed
+    contract.status = 2; 
     
     event::emit(DisputeResolvedEvent {
         contract_id: object::id(contract),
@@ -547,7 +547,7 @@ public fun cancel_contract(
         transfer::public_transfer(refund_coin, tx_context::sender(ctx));
     };
 
-    contract.status = 4; // Cancelled
+    contract.status = 4; 
 
     event::emit(ContractCancelledEvent{
         contract_id: object::id(contract),
@@ -555,7 +555,7 @@ public fun cancel_contract(
     });
 }
 
-// Hakemin sözleşmeyi devam ettirmesi
+// hakemin sözleşmeyi devam ettirmesi
 public fun resume_contract_arbitrator(
     contract: &mut WorkContract,
     ctx: &mut TxContext
@@ -572,7 +572,7 @@ public fun resume_contract_arbitrator(
     });
 }
 
-// Özel Mesaj Gönderme
+// ozel mesaj gonderme
 public fun send_private_message(
     contract: &mut WorkContract,
     content: String,
