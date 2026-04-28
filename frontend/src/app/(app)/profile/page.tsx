@@ -2,16 +2,13 @@
 
 import { useState } from "react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
 import {
   User, Wallet, Edit3, Save, Plus,
   X, ExternalLink, Eye, EyeOff, CheckCircle2,
-  Trophy, Star, Hexagon, Shield, Loader2
+  Trophy, Shield, Loader2, Hexagon
 } from "lucide-react";
 import { useContracts } from "@/hooks/useContracts";
 import { useWorkSealTransactions } from "@/hooks/useWorkSealTransactions";
@@ -50,7 +47,6 @@ export default function ProfilePage() {
     }
   };
 
-  // Gerçek On-Chain İstatistikler
   const completedAsFreelancer = contracts.filter(c => c.status === 2 && c.freelancer === address);
   const successfulJobs = completedAsFreelancer.length;
   const totalEarned = completedAsFreelancer.reduce((acc, c) => acc + BigInt(c.total_budget), 0n);
@@ -65,248 +61,242 @@ export default function ProfilePage() {
   const removeSkill = (s: string) => setSkills((p) => p.filter((x) => x !== s));
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      
-      <div className="flex items-center justify-between">
+    <div className="w-full">
+      {/* ── Page Header ── */}
+      <div className="border-b border-border px-10 pt-10 pb-10 flex items-end justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Profil</h1>
-          <p className="text-sm text-muted-foreground mt-1">Kimlik, yetenekler ve Web3 portföyün.</p>
+          <p className="font-mono text-[10px] text-muted-foreground tracking-widest uppercase mb-3">
+            KİMLİK & PORTFÖY
+          </p>
+          <h1 className="text-5xl font-black tracking-tight leading-none text-foreground">
+            Profil
+          </h1>
         </div>
         <Button
           onClick={() => setEditing(!editing)}
-          variant={editing ? "default" : "outline"}
-          className={`gap-2 transition-all ${editing ? "bg-primary text-white shadow-lg" : "border-border/50 text-foreground hover:bg-secondary"}`}
+          className={`h-10 px-8 font-bold text-sm transition-all rounded-none ${editing ? "bg-[#4FC3F7] text-[#050810] hover:bg-[#4FC3F7]/90" : "bg-card text-foreground border border-border hover:bg-white/[0.05]"} gap-2`}
         >
-          {editing ? <><Save size={16} /> Değişiklikleri Kaydet</> : <><Edit3 size={16} /> Profili Düzenle</>}
+          {editing ? <><Save size={16} /> Kaydet</> : <><Edit3 size={16} /> Düzenle</>}
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="px-10 py-8 grid grid-cols-1 md:grid-cols-3 gap-px bg-border">
         
         {/* Sol Kolon - Kimlik ve Cüzdan */}
-        <div className="md:col-span-1 space-y-6">
-          <Card className="p-6 bg-card border-border/50 relative overflow-hidden group">
-            {/* Arka plan glow */}
-            <div className="absolute inset-0 bg-primary/5 blur-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-            
-            <div className="relative z-10 flex flex-col items-center text-center">
-              <div className="relative mb-4">
-                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-primary to-blue-500 flex items-center justify-center text-white text-3xl font-bold shadow-xl border-4 border-background">
-                  {isAnonymous ? "?" : form.name ? form.name[0].toUpperCase() : <User size={40} />}
-                </div>
-                {!isAnonymous && form.name && (
-                  <div className="absolute bottom-1 right-1 w-6 h-6 bg-green-500 rounded-full flex items-center justify-center border-2 border-background">
-                    <CheckCircle2 size={12} className="text-white" />
-                  </div>
-                )}
+        <div className="md:col-span-1 space-y-px">
+          <div className="bg-card p-8 flex flex-col items-center text-center">
+            <div className="relative mb-6">
+              <div className="w-24 h-24 bg-white/[0.05] border border-border flex items-center justify-center text-foreground text-3xl font-bold font-mono">
+                {isAnonymous ? "?" : form.name ? form.name[0].toUpperCase() : <User size={32} className="text-muted-foreground" />}
               </div>
-
-              {editing && !isAnonymous ? (
-                <div className="w-full space-y-3 mb-2">
-                  <Input
-                    value={form.name}
-                    onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
-                    placeholder="Adın Soyadın"
-                    className="bg-secondary/50 border-border/50 text-center"
-                  />
-                  <Input
-                    value={form.title}
-                    onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
-                    placeholder="Unvan (örn. Developer)"
-                    className="bg-secondary/50 border-border/50 text-center text-sm"
-                  />
-                </div>
-              ) : (
-                <div className="mb-2 w-full">
-                  <div className="flex items-center justify-center gap-2 mb-1">
-                    <h2 className="font-bold text-xl text-foreground">
-                      {isAnonymous ? "Anonim Kullanıcı" : form.name || "İsim Eklenmedi"}
-                    </h2>
-                  </div>
-                  {!isAnonymous && form.title && (
-                     <Badge variant="outline" className="text-primary border-primary/20 bg-primary/5">{form.title}</Badge>
-                  )}
-                  {isAnonymous && (
-                    <Badge variant="outline" className="text-muted-foreground border-border/50 bg-secondary/50">Gizli Kimlik</Badge>
-                  )}
+              {!isAnonymous && form.name && (
+                <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-[#4FC3F7]/10 flex items-center justify-center border border-[#4FC3F7]/30">
+                  <CheckCircle2 size={16} className="text-[#4FC3F7]" />
                 </div>
               )}
             </div>
 
-            <Separator className="my-6 bg-border/50 relative z-10" />
+            {editing && !isAnonymous ? (
+              <div className="w-full space-y-3 mb-4">
+                <Input
+                  value={form.name}
+                  onChange={(e) => setForm((p) => ({ ...p, name: e.target.value }))}
+                  placeholder="Adın Soyadın"
+                  className="bg-background border-border text-center font-mono text-sm h-10 focus-visible:ring-0 focus-visible:border-[#4FC3F7]/50"
+                />
+                <Input
+                  value={form.title}
+                  onChange={(e) => setForm((p) => ({ ...p, title: e.target.value }))}
+                  placeholder="Unvan (örn. Developer)"
+                  className="bg-background border-border text-center font-mono text-xs h-10 focus-visible:ring-0 focus-visible:border-[#4FC3F7]/50"
+                />
+              </div>
+            ) : (
+              <div className="mb-4 w-full">
+                <h2 className="font-bold text-2xl text-foreground mb-2">
+                  {isAnonymous ? "Anonim Kullanıcı" : form.name || "İsim Eklenmedi"}
+                </h2>
+                {!isAnonymous && form.title && (
+                   <span className="font-mono text-[10px] px-2 py-1 bg-white/[0.05] text-muted-foreground border border-border uppercase tracking-wider">
+                     {form.title}
+                   </span>
+                )}
+                {isAnonymous && (
+                  <span className="font-mono text-[10px] px-2 py-1 bg-background text-muted-foreground border border-border uppercase tracking-wider">
+                    Gizli Kimlik
+                  </span>
+                )}
+              </div>
+            )}
 
-            <div className="space-y-4 relative z-10">
-              <div className="flex items-center justify-between p-3 rounded-xl bg-secondary/30 border border-border/50">
-                <div className="flex items-center gap-3">
-                  <Wallet size={16} className="text-muted-foreground" />
-                  <div>
-                    <p className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">Bağlı Cüzdan</p>
+            <div className="w-full mt-6 pt-6 border-t border-border">
+              <div className="flex flex-col gap-4">
+                <div className="flex items-center justify-between p-4 bg-background border border-border">
+                  <div className="flex flex-col items-start gap-1">
+                    <p className="text-[10px] text-muted-foreground uppercase tracking-widest font-mono flex items-center gap-2">
+                      <Wallet size={12} /> Cüzdan
+                    </p>
                     <p className="text-xs font-mono font-bold text-foreground">
-                      {account ? `${account.address.slice(0, 8)}...${account.address.slice(-6)}` : "0x269F...e605"}
+                      {account ? `${account.address.slice(0, 8)}...${account.address.slice(-6)}` : "Bağlı Değil"}
+                    </p>
+                  </div>
+                  <a href={account ? `https://suivision.xyz/account/${account.address}` : "#"} target="_blank" rel="noopener noreferrer">
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:bg-white/[0.05] rounded-none">
+                      <ExternalLink size={14} />
+                    </Button>
+                  </a>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="p-4 bg-background border border-border text-center">
+                    <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest mb-2">Başarılı İş</p>
+                    <p className="font-mono font-bold text-foreground text-xl">
+                      {loading ? <Loader2 size={16} className="animate-spin inline-block text-muted-foreground" /> : successfulJobs}
+                    </p>
+                  </div>
+                  <div className="p-4 bg-background border border-border text-center">
+                    <p className="text-[10px] text-muted-foreground font-mono uppercase tracking-widest mb-2">Kazanılan</p>
+                    <p className="font-mono font-bold text-[#4FC3F7] text-xl flex items-baseline justify-center gap-1">
+                      {loading ? <Loader2 size={16} className="animate-spin inline-block text-[#4FC3F7]" /> : mistToSui(totalEarned)}
                     </p>
                   </div>
                 </div>
-                <a href={account ? `https://suivision.xyz/account/${account.address}` : "#"} target="_blank" rel="noopener noreferrer">
-                  <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:bg-background">
-                    <ExternalLink size={14} />
-                  </Button>
-                </a>
-              </div>
-
-              {/* SUI Stats */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="p-3 rounded-xl bg-green-500/5 border border-green-500/10 text-center">
-                  <p className="text-[10px] text-muted-foreground font-semibold mb-1">Başarılı İş</p>
-                  <p className="font-mono font-bold text-green-500 text-lg">
-                    {loading ? <Loader2 size={16} className="animate-spin inline-block" /> : successfulJobs}
-                  </p>
-                </div>
-                <div className="p-3 rounded-xl bg-primary/5 border border-primary/10 text-center">
-                  <p className="text-[10px] text-muted-foreground font-semibold mb-1">Kazanılan</p>
-                  <p className="font-mono font-bold text-primary text-lg flex items-baseline justify-center gap-0.5">
-                    {loading ? <Loader2 size={16} className="animate-spin inline-block" /> : mistToSui(totalEarned)}<span className="text-[10px]"></span>
-                  </p>
-                </div>
               </div>
             </div>
-          </Card>
+          </div>
 
-          {/* Anonimlik Toggle */}
-          <Card className={`p-4 transition-all border ${isAnonymous ? "bg-secondary/30 border-border/50" : "bg-primary/5 border-primary/30"}`}>
-             <div className="flex items-center justify-between">
+          <div className="bg-card p-6 flex flex-col justify-between">
+             <div className="flex items-center justify-between mb-4">
                 <div className="flex items-center gap-3">
-                   <div className={`p-2 rounded-lg ${isAnonymous ? 'bg-background' : 'bg-primary/20 text-primary'}`}>
-                      {isAnonymous ? <EyeOff size={16} className="text-muted-foreground" /> : <Eye size={16} />}
+                   <div className={`w-8 h-8 flex items-center justify-center border ${isAnonymous ? 'bg-background border-border text-muted-foreground' : 'bg-[#4FC3F7]/10 border-[#4FC3F7]/20 text-[#4FC3F7]'}`}>
+                      {isAnonymous ? <EyeOff size={14} /> : <Eye size={14} />}
                    </div>
-                   <div>
-                      <p className="text-sm font-semibold">{isAnonymous ? "Anonim Mod Açık" : "Görünür Profil"}</p>
-                   </div>
+                   <p className="text-xs font-bold font-mono uppercase tracking-widest">{isAnonymous ? "Anonim Mod" : "Görünür Profil"}</p>
                 </div>
                 <button
                   onClick={() => setIsAnonymous(!isAnonymous)}
-                  className={`w-10 h-5 rounded-full transition-all relative ${isAnonymous ? "bg-border" : "bg-primary"}`}
+                  className={`w-10 h-5 relative border ${isAnonymous ? "bg-background border-border" : "bg-[#4FC3F7] border-[#4FC3F7]"}`}
                 >
-                  <div className={`w-3.5 h-3.5 bg-white rounded-full absolute top-[3px] transition-all shadow-sm ${isAnonymous ? "left-1" : "left-[22px]"}`} />
+                  <div className={`w-3 h-3 bg-white absolute top-[3px] transition-all ${isAnonymous ? "left-1 bg-muted-foreground" : "left-[22px] bg-[#050810]"}`} />
                 </button>
              </div>
-             <p className="text-[10px] text-muted-foreground mt-3">
-               {isAnonymous ? "Müşteriler gerçel adını değil, sadece cüzdan adresini ve istatistiklerini görebilir." : "Platformdaki herkes adını, unvanını ve yeteneklerini görüntüleyebilir."}
+             <p className="text-[10px] font-mono text-muted-foreground leading-relaxed">
+               {isAnonymous ? "> Cüzdan adresi harici tüm bilgiler gizlenir." : "> Profil detayların platformda herkese açık olarak yayınlanır."}
              </p>
-          </Card>
+          </div>
         </div>
 
         {/* Sağ Kolon - Bio, Yetenekler ve Portföy */}
-        <div className="md:col-span-2 space-y-6">
-          <Card className="p-6 bg-card border-border/50">
-            <h2 className="text-lg font-semibold mb-4 text-foreground flex items-center gap-2">
-              <User size={18} className="text-primary" /> Hakkımda
+        <div className="md:col-span-2 space-y-px">
+          <div className="bg-card p-8">
+            <h2 className="text-xs font-mono font-bold mb-6 text-foreground flex items-center gap-2 uppercase tracking-widest">
+              <User size={14} className="text-[#4FC3F7]" /> Hakkımda
             </h2>
             {editing && !isAnonymous ? (
               <Textarea
                 value={form.bio}
                 onChange={(e) => setForm((p) => ({ ...p, bio: e.target.value }))}
                 placeholder="Kendinden kısaca bahset..."
-                className="bg-secondary/50 border-border/50 min-h-32 text-sm leading-relaxed"
+                className="bg-background border-border min-h-32 text-sm leading-relaxed font-mono focus-visible:ring-0 focus-visible:border-[#4FC3F7]/50"
               />
             ) : (
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <p className="text-sm text-muted-foreground leading-relaxed font-mono">
                 {isAnonymous ? "Kullanıcı anonim kalmayı tercih etmiştir. Bio gizlidir." : form.bio || "Biyografi eklenmedi."}
               </p>
             )}
-          </Card>
+          </div>
 
-          <Card className="p-6 bg-card border-border/50">
-             <div className="flex items-center justify-between mb-4">
-               <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                 <Hexagon size={18} className="text-primary" /> Yetenekler
-               </h2>
-             </div>
+          <div className="bg-card p-8">
+             <h2 className="text-xs font-mono font-bold mb-6 text-foreground flex items-center gap-2 uppercase tracking-widest">
+               <Hexagon size={14} className="text-[#4FC3F7]" /> Yetenekler
+             </h2>
              
-             <div className="flex flex-wrap gap-2 mb-4">
+             <div className="flex flex-wrap gap-2">
                {skills.length > 0 ? skills.map((s) => (
-                 <Badge key={s} variant="secondary" className="px-3 py-1.5 text-xs font-medium bg-secondary border border-border/50 backdrop-blur-sm gap-1.5">
+                 <div key={s} className="px-3 py-1.5 text-xs font-mono bg-background border border-border flex items-center gap-2">
                    {s}
                    {editing && (
                      <button onClick={() => removeSkill(s)} className="text-muted-foreground hover:text-destructive transition-colors ml-1">
                        <X size={12} />
                      </button>
                    )}
-                 </Badge>
+                 </div>
                )) : (
-                 <p className="text-sm text-muted-foreground">Henüz yetenek eklenmedi.</p>
+                 <p className="text-xs font-mono text-muted-foreground">Henüz yetenek eklenmedi.</p>
                )}
              </div>
 
              {editing && (
-               <div className="flex gap-2 mt-4 pt-4 border-t border-border/30">
+               <div className="flex gap-2 mt-6 pt-6 border-t border-border">
                  <Input
-                   placeholder="Yeni yetenek (Örn: TypeScript)"
+                   placeholder="Yeni yetenek (Örn: Move)"
                    value={newSkill}
                    onChange={(e) => setNewSkill(e.target.value)}
                    onKeyDown={(e) => e.key === "Enter" && addSkill()}
-                   className="bg-background border-border/50 text-sm w-64"
+                   className="bg-background border-border text-sm w-64 h-10 font-mono focus-visible:ring-0 focus-visible:border-[#4FC3F7]/50"
                  />
-                 <Button onClick={addSkill} variant="secondary" className="gap-2">
+                 <Button onClick={addSkill} className="gap-2 bg-white/[0.05] border border-border text-foreground hover:bg-white/[0.1] rounded-none">
                    <Plus size={14} /> Ekle
                  </Button>
                </div>
              )}
-          </Card>
+          </div>
 
           {/* On-Chain Başarımlar */}
-          <Card className="p-6 bg-card border-border/50">
-            <h2 className="text-lg font-semibold mb-4 text-foreground flex items-center gap-2">
-              <Trophy size={18} className="text-primary" /> On-Chain Başarımlar
+          <div className="bg-card p-8">
+            <h2 className="text-xs font-mono font-bold mb-6 text-foreground flex items-center gap-2 uppercase tracking-widest">
+              <Trophy size={14} className="text-[#4FC3F7]" /> On-Chain Başarımlar
             </h2>
-            <div className="flex flex-col items-center justify-center py-10 text-center rounded-2xl bg-secondary/20 border border-dashed border-border/50">
+            <div className="flex flex-col items-center justify-center py-10 text-center bg-background border border-border">
               {successfulJobs > 0 ? (
                 <>
-                  <div className="w-16 h-16 rounded-full bg-primary/20 flex items-center justify-center mb-3">
-                     <Trophy size={30} className="text-primary" />
+                  <div className="w-16 h-16 bg-[#4FC3F7]/10 flex items-center justify-center mb-4 border border-[#4FC3F7]/20">
+                     <Trophy size={24} className="text-[#4FC3F7]" />
                   </div>
-                  <h3 className="text-sm font-semibold text-foreground">Güvenilir Freelancer</h3>
-                  <p className="text-xs text-muted-foreground mt-1 max-w-sm">
+                  <h3 className="text-sm font-bold text-foreground font-mono uppercase tracking-widest mb-2">Güvenilir Freelancer</h3>
+                  <p className="text-xs font-mono text-muted-foreground max-w-sm">
                     {successfulJobs} sözleşmeyi başarıyla tamamladın.
                   </p>
                 </>
               ) : (
                 <>
-                  <Trophy size={30} className="text-muted-foreground mb-3" />
-                  <h3 className="text-sm font-semibold text-foreground">Henüz on-chain başarım yok</h3>
-                  <p className="text-xs text-muted-foreground mt-1 max-w-sm">
-                    Sui ağında sözleşme imzalayıp tamamladıkça on-chain istatistiklerin gelişecek.
+                  <div className="w-16 h-16 bg-white/[0.02] border border-border flex items-center justify-center mb-4">
+                    <Trophy size={24} className="text-muted-foreground" />
+                  </div>
+                  <p className="text-xs font-mono text-muted-foreground max-w-sm">
+                    Henüz on-chain başarım bulunmuyor.
                   </p>
                 </>
               )}
             </div>
-          </Card>
+          </div>
           
-          {/* Admin Bölümü - Sadece Hakem/Admin yetkisi olanlar görebilir */}
+          {/* Admin Bölümü */}
           {isArbitrator && (
-            <Card className="p-6 bg-gradient-to-br from-card to-card/50 border-primary/20">
-              <h2 className="text-lg font-semibold mb-4 text-foreground flex items-center gap-2">
-                <Shield size={18} className="text-primary" /> Admin: Hakem Kaydı
+            <div className="bg-card p-8 border-l-2 border-l-[#4FC3F7]">
+              <h2 className="text-xs font-mono font-bold mb-4 text-[#4FC3F7] flex items-center gap-2 uppercase tracking-widest">
+                <Shield size={14} /> Admin: Hakem Kaydı
               </h2>
-              <p className="text-xs text-muted-foreground mb-4">
-                Sözleşmeyi yayınlayan (AdminCap sahibi) cüzdan ile yeni hakemler tanımlayabilirsiniz.
+              <p className="text-xs font-mono text-muted-foreground mb-6">
+                Sözleşmeyi yayınlayan cüzdan ile yeni hakemler tanımlayabilirsiniz.
               </p>
               <div className="flex gap-2">
                 <Input
-                  placeholder="0x... (Hakem olacak cüzdan adresi)"
+                  placeholder="0x... (Cüzdan Adresi)"
                   value={arbitratorAddress}
                   onChange={(e) => setArbitratorAddress(e.target.value)}
-                  className="bg-background border-border/50 text-sm flex-1 font-mono"
+                  className="bg-background border-border text-sm flex-1 font-mono focus-visible:ring-0 focus-visible:border-[#4FC3F7]/50 rounded-none h-10"
                 />
                 <Button 
                   onClick={handleRegisterArbitrator} 
                   disabled={isRegistering || !arbitratorAddress}
-                  className="gap-2 bg-primary text-white"
+                  className="gap-2 bg-[#4FC3F7] text-[#050810] rounded-none hover:bg-[#4FC3F7]/90 h-10 px-8"
                 >
                   {isRegistering ? <Loader2 size={16} className="animate-spin" /> : <Plus size={16} />}
                   Tanımla
                 </Button>
               </div>
-            </Card>
+            </div>
           )}
         </div>
 

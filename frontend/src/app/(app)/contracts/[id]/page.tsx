@@ -263,37 +263,39 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="max-w-6xl mx-auto space-y-6">
-        
-        {/* Header & Ana Aksiyon */}
-        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
-              <h1 className="text-3xl font-bold tracking-tight">{contract.title}</h1>
-              <Badge className={`${
-                contract.status === 0 ? "bg-yellow-500/10 text-yellow-500 border-yellow-500/20" :
-                contract.status === 1 ? "bg-primary/10 text-primary border-primary/20" :
-                contract.status === 2 ? "bg-green-500/10 text-green-500 border-green-500/20" :
-                contract.status === 3 ? "bg-destructive/10 text-destructive border-destructive/20" :
-                "bg-muted text-muted-foreground"
-              } border`}>
-                {contract.status === 0 ? "Ödeme Bekliyor" : 
-                 contract.status === 1 ? "Escrow Aktif" : 
-                 contract.status === 2 ? "Tamamlandı" : 
-                 contract.status === 3 ? "Anlaşmazlık (Dispute)" : "İptal Edildi"}
-              </Badge>
-            </div>
-            <p className="text-sm text-muted-foreground flex items-center gap-2">
-              <FileText size={14} /> Sözleşme ID: <span className="font-mono text-foreground/80">{contractId}</span>
+      <div className="max-w-6xl mx-auto px-2 py-10 space-y-0">
+      
+      {/* ── Page Header ── */}
+      <div className="pb-10 border-b border-border flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+        <div>
+          <div className="flex items-center gap-3 mb-3">
+            <p className="font-mono text-[10px] text-muted-foreground tracking-widest uppercase">
+              SÖZLEŞME: <span className="text-[#4FC3F7]/60">{contractId.slice(0,14)}...</span>
             </p>
+            <Badge className={`font-mono text-[10px] px-2 py-0.5 rounded-sm ${
+              contract.status === 0 ? "bg-yellow-500/10 text-yellow-500 border-none" :
+              contract.status === 1 ? "bg-[#4FC3F7]/10 text-[#4FC3F7] border-none" :
+              contract.status === 2 ? "bg-emerald-400/10 text-emerald-400 border-none" :
+              contract.status === 3 ? "bg-destructive/10 text-destructive border-none" :
+              "bg-muted text-muted-foreground border-none"
+            }`}>
+              {contract.status === 0 ? "ÖDEME BEKLİYOR" : 
+               contract.status === 1 ? "ESCROW AKTİF" : 
+               contract.status === 2 ? "TAMAMLANDI" : 
+               contract.status === 3 ? "ANLAŞMAZLIK" : "İPTAL EDİLDİ"}
+            </Badge>
           </div>
+          <h1 className="text-5xl font-black tracking-tight leading-none">
+            {contract.title}
+          </h1>
+        </div>
           
-          <div className="flex gap-3">
+          <div className="flex flex-wrap gap-3">
             {isClient && contract.status === 0 && (
               <Button 
                 onClick={handleFund}
                 disabled={isSubmittingProof}
-                className="gap-2 bg-yellow-600 hover:bg-yellow-700 text-white shadow-[0_0_15px_rgba(202,138,4,0.3)] animate-pulse"
+                className="h-10 px-6 bg-yellow-600 text-[#050810] font-bold text-sm hover:bg-yellow-700 gap-2 rounded-none"
               >
                 {isSubmittingProof ? <Loader2 size={16} className="animate-spin" /> : <Shield size={16} />} 
                 Sözleşmeyi Fonla ({mistToSui(contract.total_budget.toString())} SUI)
@@ -301,14 +303,13 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
             )}
 
             <Button 
-              variant={activeTab === "chat" ? "default" : "outline"} 
-              className={`gap-2 border-border/50 ${activeTab === "chat" ? "bg-primary text-white" : ""}`}
+              className={`h-10 px-6 font-bold text-sm gap-2 rounded-none transition-colors ${activeTab === "chat" ? "bg-[#4FC3F7] text-[#050810] hover:bg-[#4FC3F7]/90" : "bg-card border border-border text-foreground hover:bg-white/5"}`}
               onClick={() => setActiveTab(activeTab === "chat" ? "details" : "chat")}
             >
               <MessageSquare size={16} /> 
               {activeTab === "chat" ? "Sözleşme Detayları" : "Mesaj Gönder"}
               {(contract.messages?.length || 0) > 0 && activeTab !== "chat" && (
-                <Badge className="ml-1 bg-primary text-white px-1.5 py-0.5 h-auto text-[10px]">
+                <Badge className="ml-2 bg-[#4FC3F7] text-[#050810] px-1.5 py-0.5 h-auto text-[10px] rounded-sm font-mono border-none">
                   {contract.messages.length}
                 </Badge>
               )}
@@ -317,7 +318,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
             {!contract.freelancer && !isClient && (
               <Button 
                 onClick={handleTakeJob}
-                className="gap-2 bg-green-600 hover:bg-green-700 text-white shadow-[0_0_15px_rgba(22,163,74,0.3)]"
+                className="h-10 px-6 bg-emerald-400 text-[#050810] font-bold text-sm hover:bg-emerald-500 gap-2 rounded-none"
               >
                 <CheckCircle2 size={16} /> İşi Üstlen
               </Button>
@@ -326,8 +327,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
             {isFreelancer && contract.status === 1 && activeMilestone && (
               <Button 
                 onClick={() => setIsProofOpen(!isProofOpen)}
-                variant={isProofOpen ? "outline" : "default"}
-                className={`gap-2 transition-all ${!isProofOpen ? "bg-primary hover:bg-primary/90 text-primary-foreground shadow-[0_0_15px_rgba(var(--primary),0.3)]" : "border-border/50"}`}
+                className={`h-10 px-6 font-bold text-sm gap-2 rounded-none transition-colors ${!isProofOpen ? "bg-[#4FC3F7] text-[#050810] hover:bg-[#4FC3F7]/90" : "bg-card border border-border text-foreground hover:bg-white/5"}`}
               >
                 <UploadCloud size={16} /> 
                 {isProofOpen ? "Kanıt Panelini Kapat" : "İş Kanıtı Yükle"}
@@ -335,22 +335,21 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
             )}
 
             {isFreelancer && contract.status === 0 && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-yellow-500/10 border border-yellow-500/20 rounded-lg text-yellow-600 text-xs font-medium animate-pulse">
-                <Clock size={14} /> Müşterinin Ödeme Yapması Bekleniyor
+              <div className="flex items-center gap-2 px-4 h-10 bg-yellow-500/10 border border-yellow-500/20 text-yellow-600 text-xs font-mono font-bold animate-pulse">
+                <Clock size={14} /> MÜŞTERİNİN ÖDEME YAPMASI BEKLENİYOR
               </div>
             )}
 
             {isFreelancer && contract.status === 1 && !activeMilestone && (
-              <div className="flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 rounded-lg text-blue-600 text-xs font-medium">
-                <CheckCircle2 size={14} /> Tüm Aşamalar Tamamlandı
+              <div className="flex items-center gap-2 px-4 h-10 bg-[#4FC3F7]/10 border border-[#4FC3F7]/20 text-[#4FC3F7] text-xs font-mono font-bold">
+                <CheckCircle2 size={14} /> TÜM AŞAMALAR TAMAMLANDI
               </div>
             )}
 
             {(isClient || isFreelancer) && contract.status === 1 && (
               <Button 
                 onClick={() => setIsDisputeOpen(true)}
-                variant="ghost"
-                className="gap-2 text-destructive hover:bg-destructive/10 hover:text-destructive"
+                className="h-10 px-6 bg-transparent border border-destructive/50 text-destructive font-bold text-sm hover:bg-destructive/10 gap-2 rounded-none"
               >
                 <ShieldAlert size={16} /> Sorun Bildir
               </Button>
@@ -362,25 +361,25 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
           
           <div className="lg:col-span-2 space-y-6">
             {activeTab === "chat" ? (
-              <Card className="flex flex-col h-[600px] border-border/50 bg-card overflow-hidden shadow-xl">
-                <div className="p-4 border-b border-border/50 bg-secondary/20">
+              <div className="flex flex-col h-[600px] border border-border bg-card shadow-2xl">
+                <div className="p-4 border-b border-border bg-secondary/5">
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-sm font-semibold flex items-center gap-2">
-                      <MessageSquare size={16} className="text-primary" /> İletişim Merkezi
-                    </h3>
+                    <p className="font-mono text-xs text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                      <MessageSquare size={14} className="text-[#4FC3F7]" /> İLETİŞİM MERKEZİ
+                    </p>
                     {contract.arbitrator && (
-                      <Badge variant="outline" className="text-[10px] bg-primary/5 text-primary border-primary/20">
-                        Hakem Müdahale Ediyor
+                      <Badge className="font-mono text-[10px] bg-[#4FC3F7]/5 text-[#4FC3F7] border border-[#4FC3F7]/20 rounded-sm">
+                        HAKEM MÜDAHALE EDİYOR
                       </Badge>
                     )}
                   </div>
 
                   {/* Kanal Seçici (Sadece Hakem Atandığında Aktif) */}
                   {contract.arbitrator && (
-                    <div className="flex gap-1 p-1 bg-background/50 rounded-lg border border-border/50">
+                    <div className="flex gap-px bg-border">
                       <button 
                         onClick={() => setChatChannel("group")}
-                        className={`flex-1 text-[10px] py-1.5 rounded-md transition-all ${chatChannel === "group" ? "bg-primary text-white shadow-sm" : "hover:bg-secondary text-muted-foreground"}`}
+                        className={`flex-1 font-mono text-[10px] py-3 tracking-widest uppercase transition-all ${chatChannel === "group" ? "bg-[#4FC3F7] text-[#050810] font-bold" : "bg-card text-muted-foreground hover:bg-white/5"}`}
                       >
                         Genel Sohbet
                       </button>
@@ -388,7 +387,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                       {(isClient || isArbitrator) && (
                         <button 
                           onClick={() => setChatChannel("client_arb")}
-                          className={`flex-1 text-[10px] py-1.5 rounded-md transition-all ${chatChannel === "client_arb" ? "bg-primary text-white shadow-sm" : "hover:bg-secondary text-muted-foreground"}`}
+                          className={`flex-1 font-mono text-[10px] py-3 tracking-widest uppercase transition-all ${chatChannel === "client_arb" ? "bg-[#4FC3F7] text-[#050810] font-bold" : "bg-card text-muted-foreground hover:bg-white/5"}`}
                         >
                           Hakem & Müşteri
                         </button>
@@ -397,7 +396,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                       {(isFreelancer || isArbitrator) && (
                         <button 
                           onClick={() => setChatChannel("freelancer_arb")}
-                          className={`flex-1 text-[10px] py-1.5 rounded-md transition-all ${chatChannel === "freelancer_arb" ? "bg-primary text-white shadow-sm" : "hover:bg-secondary text-muted-foreground"}`}
+                          className={`flex-1 font-mono text-[10px] py-3 tracking-widest uppercase transition-all ${chatChannel === "freelancer_arb" ? "bg-[#4FC3F7] text-[#050810] font-bold" : "bg-card text-muted-foreground hover:bg-white/5"}`}
                         >
                           Hakem & Freelancer
                         </button>
@@ -409,9 +408,9 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                 <div className="flex-1 overflow-y-auto p-4 space-y-4">
                   {/* Bilgilendirme Bannerı */}
                   {chatChannel !== "group" && (
-                    <div className="bg-primary/5 border border-primary/20 rounded-lg p-3 text-center mb-4">
-                      <p className="text-[10px] text-primary font-medium flex items-center justify-center gap-1.5">
-                        <ShieldCheck size={12} /> Bu kanal sadece Hakem ve {chatChannel === "client_arb" ? "Müşteri" : "Freelancer"} arasında özeldir.
+                    <div className="bg-[#4FC3F7]/5 border border-[#4FC3F7]/20 p-3 text-center mb-4">
+                      <p className="font-mono text-[10px] text-[#4FC3F7] uppercase tracking-widest flex items-center justify-center gap-1.5">
+                        <ShieldCheck size={12} /> BU KANAL SADECE HAKEM VE {chatChannel === "client_arb" ? "MÜŞTERİ" : "FREELANCER"} ARASINDA ÖZELDİR.
                       </p>
                     </div>
                   )}
@@ -424,10 +423,8 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                     if (!currentMessages || currentMessages.length === 0) {
                       return (
                         <div className="h-full flex flex-col items-center justify-center text-center opacity-50 space-y-3">
-                          <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center">
-                             <MessageSquare size={24} />
-                          </div>
-                          <p className="text-sm">Henüz mesaj yok. İlk mesajı siz gönderin.</p>
+                          <span className="text-8xl font-black text-border mb-2 block">·</span>
+                          <p className="font-mono text-xs text-muted-foreground uppercase tracking-widest">Henüz mesaj yok.</p>
                         </div>
                       );
                     }
@@ -437,9 +434,9 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                       const isArb = contract.arbitrator && msg.sender.toLowerCase() === contract.arbitrator.toLowerCase();
                       return (
                         <div key={i} className={`flex flex-col ${isMe ? "items-end" : "items-start"}`}>
-                          <div className={`max-w-[80%] p-3 rounded-2xl text-sm ${
-                            isMe ? "bg-primary text-white rounded-tr-none shadow-sm" : 
-                            (isArb ? "bg-destructive/10 border border-destructive/20 text-foreground rounded-tl-none" : "bg-secondary text-foreground rounded-tl-none shadow-sm")
+                          <div className={`max-w-[80%] p-4 text-sm ${
+                            isMe ? "bg-[#4FC3F7] text-[#050810] font-medium" : 
+                            (isArb ? "bg-destructive/10 border border-destructive/20 text-foreground" : "bg-secondary/50 border border-border text-foreground")
                           }`}>
                             {msg.content}
                           </div>
@@ -453,7 +450,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                   })()}
                 </div>
 
-                <div className="p-4 border-t border-border/50 bg-secondary/10">
+                <div className="p-4 border-t border-border bg-card">
                   {isClient || isFreelancer || isArbitrator ? (
                     <>
                       <div className="flex gap-2">
@@ -463,168 +460,161 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                           onChange={(e) => setChatInput(e.target.value)}
                           onKeyDown={(e) => e.key === "Enter" && handleSendMessage()}
                           disabled={isSendingMessage}
-                          className="bg-background border-border/50 h-10 text-sm"
+                          className="bg-background border-border h-10 text-sm rounded-none focus-visible:ring-[#4FC3F7]"
                         />
                         <Button 
                           onClick={handleSendMessage}
                           disabled={isSendingMessage || !chatInput.trim()}
-                          className="bg-primary text-white h-10 px-6 font-semibold"
+                          className="bg-[#4FC3F7] text-[#050810] h-10 px-6 font-bold rounded-none hover:bg-[#4FC3F7]/90 uppercase tracking-wider"
                         >
                           {isSendingMessage ? <Loader2 size={16} className="animate-spin" /> : "Gönder"}
                         </Button>
                       </div>
-                      <p className="text-[10px] text-muted-foreground mt-2 text-center italic">
+                      <p className="text-[10px] text-muted-foreground mt-3 text-center font-mono uppercase tracking-widest">
                         {chatChannel === "group" 
-                          ? "Not: Bu mesaj tüm taraflar tarafından görülebilir." 
-                          : "Not: Bu mesaj blockchain üzerine şifreli olmasa da sadece yetkili taraflara gösterilir."}
+                          ? "* Bu mesaj tüm taraflar tarafından görülebilir." 
+                          : "* Bu mesaj sadece yetkili taraflara gösterilir."}
                       </p>
                     </>
                   ) : (
-                    <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-center">
-                      <p className="text-xs text-destructive font-medium flex items-center justify-center gap-2">
-                        <XCircle size={14} /> Mesaj göndermek için yetkiniz bulunmuyor.
+                    <div className="p-3 bg-destructive/10 border border-destructive/20 text-center">
+                      <p className="text-xs text-destructive font-bold font-mono tracking-widest flex items-center justify-center gap-2 uppercase">
+                        <XCircle size={14} /> Mesaj göndermek için yetkiniz yok.
                       </p>
                     </div>
                   )}
                 </div>
-              </Card>
+              </div>
             ) : (
               <>
                 {/* İş Kanıtı Yükleme Paneli */}
                 {isProofOpen && (
-                  <Card className="p-6 bg-primary/5 border-primary/40 shadow-xl animate-in slide-in-from-top-4 fade-in duration-300 ring-1 ring-primary/20">
-                    <div className="flex items-center gap-3 mb-4 border-b border-primary/10 pb-4">
-                      <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
-                        <UploadCloud size={24} className="text-primary" />
-                      </div>
-                      <div>
-                        <h2 className="text-xl font-bold text-foreground">İş Kanıtı (Proof of Work) Sun</h2>
-                        <p className="text-xs text-muted-foreground">Teslimat bilgilerini girerek onaya gönder.</p>
-                      </div>
+                  <div className="border border-[#4FC3F7]/50 bg-[#4FC3F7]/5 shadow-[0_0_20px_rgba(79,195,247,0.1)] animate-in slide-in-from-top-4 fade-in duration-300">
+                    <div className="px-8 py-5 border-b border-[#4FC3F7]/20 flex items-center gap-3">
+                      <UploadCloud size={16} className="text-[#4FC3F7]" />
+                      <p className="font-mono text-xs text-[#4FC3F7] uppercase tracking-widest font-bold">
+                        İş Kanıtı (Proof of Work) Sun
+                      </p>
                     </div>
                     
-                    <div className="space-y-5">
+                    <div className="p-8 space-y-6">
                       <div>
-                        <Label className="text-sm font-semibold mb-2 block">Teslimat Linki</Label>
+                        <Label className="text-xs font-mono uppercase tracking-widest mb-3 block text-muted-foreground">Teslimat Linki</Label>
                         <div className="relative">
                           <LinkIcon size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
                           <Input 
                             placeholder="GitHub, Figma, Vercel veya Dosya Linki" 
                             value={proofForm.link}
                             onChange={(e) => setProofForm({...proofForm, link: e.target.value})}
-                            className="pl-9 bg-background/50 border-border/50 focus-visible:ring-primary/50 h-11" 
+                            className="pl-10 bg-background border-border focus-visible:ring-[#4FC3F7] h-12 rounded-none font-mono text-sm" 
                           />
                         </div>
-                        <p className="text-[10px] text-muted-foreground mt-1.5 ml-1">
+                        <p className="text-[10px] font-mono text-muted-foreground mt-2 uppercase tracking-wider">
                           * Müşterinin işi kontrol edebileceği bir URL adresi girin.
                         </p>
                       </div>
                       <div>
-                        <Label className="text-sm font-semibold mb-2 block">Müşteriye Notlar</Label>
+                        <Label className="text-xs font-mono uppercase tracking-widest mb-3 block text-muted-foreground">Müşteriye Notlar</Label>
                         <Textarea 
                           placeholder="Neler yapıldı? Önemli detayları buraya yazabilirsiniz..." 
                           value={proofForm.notes}
                           onChange={(e) => setProofForm({...proofForm, notes: e.target.value})}
-                          className="bg-background/50 border-border/50 focus-visible:ring-primary/50 min-h-32 resize-none" 
+                          className="bg-background border-border focus-visible:ring-[#4FC3F7] min-h-32 resize-none rounded-none text-sm font-mono" 
                         />
                       </div>
-                      <div className="pt-2 flex justify-end gap-3">
-                        <Button variant="ghost" onClick={() => setIsProofOpen(false)} className="hover:bg-secondary">İptal</Button>
+                      <div className="pt-4 flex justify-end gap-3 border-t border-[#4FC3F7]/20">
+                        <Button variant="ghost" onClick={() => setIsProofOpen(false)} className="hover:bg-white/5 rounded-none font-mono uppercase tracking-wider text-xs">İptal</Button>
                         <Button 
                           onClick={() => handleSubmitProof(activeMilestone.originalIndex)}
                           disabled={isSubmittingProof}
-                          className="gap-2 bg-primary text-white hover:bg-primary/90 px-6 h-11 font-semibold shadow-lg shadow-primary/20"
+                          className="gap-2 bg-[#4FC3F7] text-[#050810] hover:bg-[#4FC3F7]/90 px-8 h-10 font-bold rounded-none uppercase tracking-wider text-xs"
                         >
                           {isSubmittingProof ? (
-                            <> <Loader2 size={18} className="animate-spin" /> İşlem Yapılıyor...</>
+                            <> <Loader2 size={16} className="animate-spin" /> İŞLEM YAPILIYOR...</>
                           ) : (
-                            <> <CheckCircle2 size={18} /> Kanıtı Zincire İşle</>
+                            <> <CheckCircle2 size={16} /> KANITI ZİNCİRE İŞLE</>
                           )}
                         </Button>
                       </div>
                     </div>
-                  </Card>
+                  </div>
                 )}
 
                 {/* Hakem Paneli (Sadece Anlaşmazlık Durumunda) */}
                 {contract.status === 3 && (
-                  <Card className="p-6 bg-card border-destructive/20 shadow-sm relative overflow-hidden">
-                    <div className="absolute top-0 right-0 p-4 opacity-5">
-                      <Scale size={80} className="text-destructive" />
+                  <div className="border border-destructive/50 bg-destructive/5 relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-8 opacity-5 pointer-events-none">
+                      <Scale size={120} className="text-destructive" />
                     </div>
                     
                     <div className="relative z-10">
-                      <div className="flex items-center justify-between mb-6">
-                        <h2 className="text-lg font-semibold flex items-center gap-2">
-                          <Gavel size={20} className="text-destructive" /> Hakem ve Uyuşmazlık Yönetimi
-                        </h2>
+                      <div className="flex items-center justify-between px-8 py-5 border-b border-destructive/20">
+                        <p className="font-mono text-xs text-destructive uppercase tracking-widest font-bold flex items-center gap-2">
+                          <Gavel size={14} /> HAKEM VE UYUŞMAZLIK YÖNETİMİ
+                        </p>
                         {contract.arbitrator ? (
-                          <Badge className="bg-green-500/10 text-green-500 border-green-500/20">Bağımsız Hakem Atandı</Badge>
+                          <Badge className="font-mono text-[10px] bg-emerald-500/10 text-emerald-500 border-none rounded-sm px-2 py-0.5">BAĞIMSIZ HAKEM ATANDI</Badge>
                         ) : (
-                          <Badge variant="outline" className="text-destructive border-destructive/30">Hakem Atanıyor...</Badge>
+                          <Badge className="font-mono text-[10px] bg-destructive/10 text-destructive border-none rounded-sm px-2 py-0.5">HAKEM ATANIYOR...</Badge>
                         )}
                       </div>
 
                       {!contract.arbitrator ? (
-                        <div className="py-8 text-center space-y-4">
+                        <div className="p-12 text-center space-y-4">
                           <Loader2 className="animate-spin text-destructive mx-auto" size={32} />
                           <div className="space-y-1">
-                            <p className="font-semibold text-sm">Sistem Hakem Atıyor</p>
-                            <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-                              Manipülasyonu önlemek için bağımsız bir hakem otomatik olarak atanmaktadır. Lütfen bekleyin.
+                            <p className="font-black text-xl text-destructive tracking-tight">SİSTEM HAKEM ATIYOR</p>
+                            <p className="font-mono text-[10px] text-muted-foreground max-w-xs mx-auto uppercase tracking-widest">
+                              Manipülasyonu önlemek için bağımsız bir hakem otomatik olarak atanmaktadır.
                             </p>
                           </div>
                         </div>
                       ) : (
-                        <div className="space-y-6 text-center py-6">
-                           <div className="w-20 h-20 rounded-full bg-green-500/10 flex items-center justify-center mx-auto mb-4 border border-green-500/20">
-                             <Scale size={40} className="text-green-500" />
-                           </div>
+                        <div className="p-8 space-y-6 text-center">
                            <div>
-                             <h3 className="text-lg font-bold">Sistem Hakemi Atandı</h3>
-                             <p className="text-sm font-semibold mt-2 text-primary">
-                               Bağımsız Sistem Hakemi
+                             <h3 className="text-3xl font-black text-destructive tracking-tight">SİSTEM HAKEMİ ATANDI</h3>
+                             <p className="font-mono text-xs text-foreground mt-2 uppercase tracking-widest">
+                               BAĞIMSIZ SİSTEM HAKEMİ
                              </p>
-                             <p className="text-[10px] text-muted-foreground mt-3 italic">
+                             <p className="font-mono text-[10px] text-muted-foreground mt-4 uppercase tracking-wider">
                                * Hakem ücreti (%2) otomatik olarak haksız bulunan tarafın bakiyesinden düşülecektir.
                              </p>
                            </div>
 
                            {account?.address?.toLowerCase() === contract.arbitrator?.toLowerCase() && (
-                             <div className="pt-8 border-t border-border/50 max-w-md mx-auto">
-                               <p className="text-sm font-semibold mb-6 flex items-center justify-center gap-2">
-                                 <UserCheck size={16} className="text-primary" /> Karar Verme Yetkiniz Var
+                             <div className="pt-8 border-t border-destructive/20 max-w-xl mx-auto">
+                               <p className="font-mono text-xs text-destructive font-bold mb-6 flex items-center justify-center gap-2 uppercase tracking-widest">
+                                 <UserCheck size={14} /> KARAR VERME YETKİNİZ VAR
                                </p>
                                <div className="grid grid-cols-2 gap-4">
                                   <Button 
                                     onClick={() => handleResolveDispute("client")}
                                     variant="outline" 
                                     disabled={isActionLoading === 999}
-                                    className="flex-col h-auto py-4 gap-2 border-destructive/20 hover:bg-destructive/10"
+                                    className="flex-col h-auto py-6 gap-2 border-destructive/30 hover:bg-destructive/10 rounded-none bg-background"
                                   >
-                                    <span className="text-destructive font-bold text-sm">Müşteri Haklı</span>
-                                    <span className="text-[10px] text-muted-foreground">İade Et (%2 Kesintiyle)</span>
+                                    <span className="text-destructive font-black text-lg tracking-tight">MÜŞTERİ HAKLI</span>
+                                    <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">İade Et (%2 Kesintiyle)</span>
                                   </Button>
                                   <Button 
                                     onClick={() => handleResolveDispute("freelancer")}
                                     disabled={isActionLoading === 999}
-                                    className="flex-col h-auto py-4 gap-2 bg-green-600 hover:bg-green-700"
+                                    className="flex-col h-auto py-6 gap-2 bg-emerald-500 hover:bg-emerald-600 rounded-none text-[#050810]"
                                   >
-                                    <span className="text-white font-bold text-sm">Freelancer Haklı</span>
-                                    <span className="text-[10px] text-white/70">Öde (%2 Kesintiyle)</span>
+                                    <span className="font-black text-lg tracking-tight">FREELANCER HAKLI</span>
+                                    <span className="font-mono text-[10px] uppercase tracking-widest opacity-80">Öde (%2 Kesintiyle)</span>
                                   </Button>
                                </div>
-                               <div className="mt-4 pt-4 border-t border-border/50">
+                               <div className="mt-4 pt-4 border-t border-destructive/20">
                                   <Button 
                                     onClick={handleResumeContract}
                                     disabled={isActionLoading === 888}
-                                    variant="outline"
-                                    className="w-full h-11 gap-2 border-primary/50 text-primary hover:bg-primary/10"
+                                    className="w-full h-12 gap-2 bg-transparent border border-destructive text-destructive hover:bg-destructive/10 rounded-none font-bold uppercase tracking-wider text-xs"
                                   >
                                     {isActionLoading === 888 ? <Loader2 size={16} className="animate-spin" /> : <RotateCcw size={16} />}
-                                    Anlaşmazlığı Kapat, İşi Devam Ettir
+                                    ANLAŞMAZLIĞI KAPAT, İŞİ DEVAM ETTİR
                                   </Button>
-                                  <p className="text-[10px] text-muted-foreground mt-2 text-center">
+                                  <p className="font-mono text-[10px] text-muted-foreground mt-3 text-center uppercase tracking-widest">
                                     * Bu seçenek iş henüz teslim edilmediyse veya revize gerekiyorsa kullanılır.
                                   </p>
                                </div>
@@ -633,86 +623,90 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                         </div>
                       )}
                     </div>
-                  </Card>
+                  </div>
                 )}
 
-                <Card className="p-6 bg-card border-border/50 shadow-sm">
-                  <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <FileText size={18} className="text-primary" /> İş Tanımı
-                  </h2>
-                  <p className="text-sm text-muted-foreground leading-relaxed whitespace-pre-wrap">
-                    {contract.description}
-                  </p>
-                </Card>
+                <div className="border border-border bg-card">
+                  <div className="px-8 py-5 border-b border-border">
+                    <p className="font-mono text-xs text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                      <FileText size={14} className="text-[#4FC3F7]" /> İŞ TANIMI
+                    </p>
+                  </div>
+                  <div className="p-8">
+                    <p className="text-sm text-foreground leading-relaxed whitespace-pre-wrap font-medium">
+                      {contract.description}
+                    </p>
+                  </div>
+                </div>
               </>
             )}
 
-              <Card className="p-6 bg-card border-border/50 shadow-sm">
-                <div className="flex items-center justify-between mb-6">
-                   <h2 className="text-lg font-semibold flex items-center gap-2">
-                     <Clock size={18} className="text-primary" /> İş Aşamaları
-                   </h2>
-                   <Badge variant="outline" className="bg-secondary/30">
-                     {contract.milestones?.length} Aşama
+              <div className="border border-border bg-card">
+                <div className="flex items-center justify-between px-8 py-5 border-b border-border">
+                   <p className="font-mono text-xs text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                     <Clock size={14} className="text-[#4FC3F7]" /> İŞ AŞAMALARI
+                   </p>
+                   <Badge className="font-mono text-[10px] bg-secondary text-foreground rounded-sm px-2 py-0.5 border-none">
+                     {contract.milestones?.length} AŞAMA
                    </Badge>
                 </div>
                 
-                <div className="space-y-4">
+                <div className="divide-y divide-border">
                   {mappedMilestones?.map((m: any, i: number) => (
-                    <div key={i} className={`p-4 rounded-xl border flex flex-col md:flex-row md:items-center justify-between gap-4 transition-all ${
-                      m.status === 'completed' ? 'bg-green-500/5 border-green-500/20 opacity-80' : 
-                      m.status === 'awaiting_approval' ? 'bg-yellow-500/5 border-yellow-500/30 shadow-[0_0_15px_rgba(234,179,8,0.1)] relative group' :
-                      m.status === 'in_progress' ? 'bg-primary/5 border-primary/30 shadow-[0_0_15px_rgba(var(--primary),0.1)] relative overflow-hidden group' : 
-                      'bg-secondary/30 border-border/40'
+                    <div key={i} className={`p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 transition-all relative group ${
+                      m.status === 'completed' ? 'bg-emerald-500/5 opacity-80' : 
+                      m.status === 'awaiting_approval' ? 'bg-yellow-500/5' :
+                      m.status === 'in_progress' ? 'bg-[#4FC3F7]/5' : 
+                      'bg-transparent'
                     }`}>
                       {m.status === 'in_progress' && (
                         <>
-                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-l-xl"></div>
-                          <div className="absolute -inset-px bg-gradient-to-r from-primary/5 to-transparent blur-sm" />
+                          <div className="absolute left-0 top-0 bottom-0 w-1 bg-[#4FC3F7]"></div>
+                          <div className="absolute -inset-px bg-gradient-to-r from-[#4FC3F7]/10 to-transparent blur-sm" />
                         </>
                       )}
                       {m.status === 'awaiting_approval' && (
-                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-yellow-500 rounded-l-xl"></div>
+                         <div className="absolute left-0 top-0 bottom-0 w-1 bg-yellow-500"></div>
                       )}
                       
                       <div className="flex items-start gap-4 relative z-10 flex-1">
-                        <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-1 ${
-                          m.status === 'completed' ? 'bg-green-500/20 text-green-500 border border-green-500/30' :
+                        <div className={`w-8 h-8 rounded-none flex items-center justify-center shrink-0 mt-1 font-mono font-bold text-xs ${
+                          m.status === 'completed' ? 'bg-emerald-500/20 text-emerald-500 border border-emerald-500/30' :
                           m.status === 'awaiting_approval' ? 'bg-yellow-500/20 text-yellow-500 border border-yellow-500/30' :
-                          m.status === 'in_progress' ? 'bg-primary/20 text-primary animate-pulse border border-primary/30' :
-                          'bg-secondary text-muted-foreground border border-border/50'
+                          m.status === 'in_progress' ? 'bg-[#4FC3F7]/20 text-[#4FC3F7] animate-pulse border border-[#4FC3F7]/30' :
+                          'bg-secondary text-muted-foreground border border-border'
                         }`}>
-                          {m.status === 'completed' ? <CheckCircle2 size={16} /> : <span className="text-xs font-bold">{i+1}</span>}
+                          {m.status === 'completed' ? <CheckCircle2 size={14} /> : <span>{i+1}</span>}
                         </div>
                         <div className="flex-1">
-                          <p className={`text-sm font-semibold ${m.status === 'completed' ? 'text-green-500/80 line-through' : 'text-foreground'}`}>
+                          <p className={`text-xl font-bold tracking-tight ${m.status === 'completed' ? 'text-emerald-500/80 line-through' : 'text-foreground'}`}>
                             {m.title}
                           </p>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="secondary" className="text-[10px] h-4 font-normal">
-                              {m.status === 'completed' ? 'Ödendi' : 
-                               m.status === 'awaiting_approval' ? 'Onay Bekleniyor' : 
-                               m.status === 'in_progress' ? 'Aktif' : 'Beklemede'}
+                          <div className="flex items-center gap-2 mt-2">
+                            <Badge className="font-mono text-[10px] rounded-sm px-2 py-0.5 border-none bg-background text-muted-foreground uppercase tracking-widest">
+                              {m.status === 'completed' ? 'ÖDENDİ' : 
+                               m.status === 'awaiting_approval' ? 'ONAY BEKLENİYOR' : 
+                               m.status === 'in_progress' ? 'AKTİF' : 'BEKLEMEDE'}
                             </Badge>
                           </div>
                           
                           {m.proof_link && (
-                            <div className="mt-4 p-4 rounded-xl bg-background/80 border border-border/50 shadow-sm">
-                               <div className="flex items-center justify-between mb-2">
-                                 <p className="font-bold text-xs flex items-center gap-1.5"><UploadCloud size={14} className="text-primary"/> Teslim Edilen Kanıt:</p>
-                                 <Badge variant="outline" className="text-[9px] h-4 bg-primary/5 border-primary/20 text-primary">Zincir Verisi</Badge>
+                            <div className="mt-6 p-6 bg-background border border-border">
+                               <div className="flex items-center justify-between mb-4">
+                                 <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest flex items-center gap-2"><UploadCloud size={14} className="text-[#4FC3F7]"/> TESLİM EDİLEN KANIT</p>
+                                 <Badge className="font-mono text-[10px] bg-[#4FC3F7]/10 text-[#4FC3F7] rounded-sm border-none uppercase">ZİNCİR VERİSİ</Badge>
                                </div>
                                <a 
                                  href={m.proof_link} 
                                  target="_blank" 
                                  rel="noopener noreferrer" 
-                                 className="text-xs text-primary hover:underline flex items-center gap-1 font-mono break-all bg-primary/5 p-2 rounded border border-primary/10"
+                                 className="text-xs text-[#4FC3F7] hover:underline flex items-center gap-2 font-mono break-all bg-[#4FC3F7]/5 p-3 border border-[#4FC3F7]/20"
                                >
-                                 <ExternalLink size={12}/> {m.proof_link}
+                                 <ExternalLink size={14}/> {m.proof_link}
                                </a>
                                {m.proof_notes && (
-                                 <div className="mt-3 pt-3 border-t border-border/30">
-                                   <p className="text-xs text-muted-foreground italic leading-relaxed">"{m.proof_notes}"</p>
+                                 <div className="mt-4 pt-4 border-t border-border">
+                                   <p className="text-sm text-foreground italic leading-relaxed font-medium">"{m.proof_notes}"</p>
                                  </div>
                                )}
                             </div>
@@ -720,31 +714,28 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                         </div>
                       </div>
 
-                      <div className="flex flex-col items-end gap-3 relative z-10 shrink-0 min-w-fit">
+                      <div className="flex flex-col items-end gap-4 relative z-10 shrink-0 min-w-fit">
                         <div className="flex flex-col items-end">
-                          <span className="font-mono font-bold text-base text-foreground">{mistToSui(m.amount)} SUI</span>
-                          <span className="text-[10px] text-muted-foreground">Aşama Bütçesi</span>
+                          <span className="font-mono font-black text-3xl tracking-tighter text-foreground">{mistToSui(m.amount)} SUI</span>
+                          <span className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">Aşama Bütçesi</span>
                         </div>
                         
                         {isClient && m.status === 'awaiting_approval' && (
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 mt-2">
                              <Button 
                                 onClick={() => handleReject(i)}
                                 disabled={isActionLoading === i}
-                                variant="outline" 
-                                size="sm" 
-                                className="border-destructive/30 text-destructive hover:bg-destructive/10 h-9 text-xs font-semibold whitespace-nowrap"
+                                className="bg-transparent border border-destructive text-destructive hover:bg-destructive/10 h-10 px-4 text-xs font-bold rounded-none uppercase tracking-wider"
                              >
-                               {isActionLoading === i ? <Loader2 size={12} className="animate-spin" /> : <XCircle size={14} className="mr-1.5" />}
+                               {isActionLoading === i ? <Loader2 size={14} className="animate-spin" /> : <XCircle size={14} className="mr-2" />}
                                Revize İste
                              </Button>
                              <Button 
                                 onClick={() => handleApprove(i)}
                                 disabled={isActionLoading === i}
-                                size="sm" 
-                                className="bg-green-600 hover:bg-green-700 text-white h-9 text-xs font-semibold shadow-lg shadow-green-600/20 whitespace-nowrap"
+                                className="bg-emerald-400 text-[#050810] hover:bg-emerald-500 h-10 px-6 text-xs font-bold rounded-none uppercase tracking-wider"
                              >
-                               {isActionLoading === i ? <Loader2 size={12} className="animate-spin" /> : <CheckCircle2 size={14} className="mr-1.5" />}
+                               {isActionLoading === i ? <Loader2 size={14} className="animate-spin" /> : <CheckCircle2 size={14} className="mr-2" />}
                                Onayla
                              </Button>
                           </div>
@@ -753,45 +744,50 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                     </div>
                   ))}
                 </div>
-              </Card>
+              </div>
           </div>
 
           <div className="space-y-6">
-            <Card className="p-6 bg-gradient-to-br from-card to-card/50 border-primary/20 relative overflow-hidden group">
-              <div className="absolute inset-0 bg-primary/5 blur-3xl rounded-full scale-150 -translate-x-1/2 -translate-y-1/2 opacity-20 group-hover:opacity-40 transition-opacity"></div>
-              <div className="absolute top-0 right-0 p-4 opacity-10">
-                <Shield size={100} />
+            <div className="border border-[#4FC3F7]/50 bg-[#4FC3F7]/5 relative overflow-hidden group">
+              <div className="absolute top-0 right-0 p-8 opacity-10 pointer-events-none">
+                <Shield size={120} className="text-[#4FC3F7]" />
               </div>
-              <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2 mb-4 relative z-10">
-                <Shield size={16} className="text-primary" /> Escrow Bakiyesi
-              </h3>
-              <div className="mb-4 relative z-10 flex items-baseline gap-2">
-                <span className="text-5xl font-mono font-bold tracking-tighter shadow-inner">
-                  {mistToSui(totalBudget)}
-                </span>
-                <span className="text-xl text-primary font-bold">SUI</span>
+              <div className="px-8 py-5 border-b border-[#4FC3F7]/20 relative z-10">
+                <p className="font-mono text-xs text-[#4FC3F7] uppercase tracking-widest flex items-center gap-2 font-bold">
+                  <Shield size={14} /> ESCROW BAKİYESİ
+                </p>
               </div>
-              <div className="space-y-2 text-xs text-muted-foreground border-t border-border/50 pt-4 mt-4 relative z-10">
-                <div className="flex justify-between">
-                  <span>Toplam Bütçe:</span>
-                  <span className="font-mono">{mistToSui(totalBudget)} SUI</span>
+              <div className="p-8 relative z-10">
+                <div className="mb-6 flex items-baseline gap-2">
+                  <span className="text-6xl font-black tracking-tighter text-foreground">
+                    {mistToSui(totalBudget)}
+                  </span>
+                  <span className="text-xl text-[#4FC3F7] font-bold">SUI</span>
                 </div>
-                <div className="flex justify-between text-green-500">
-                  <span>Serbest Bırakılan:</span>
-                  <span className="font-mono">{mistToSui(releasedAmount)} SUI</span>
-                </div>
-                <div className="flex justify-between text-primary">
-                  <span>Kilitli Kalan:</span>
-                  <span className="font-mono">{mistToSui(lockedAmount)} SUI</span>
+                <div className="space-y-3 font-mono text-xs text-muted-foreground uppercase tracking-widest pt-6 border-t border-[#4FC3F7]/20">
+                  <div className="flex justify-between">
+                    <span>Toplam Bütçe:</span>
+                    <span className="text-foreground">{mistToSui(totalBudget)} SUI</span>
+                  </div>
+                  <div className="flex justify-between text-emerald-400">
+                    <span>Serbest Bırakılan:</span>
+                    <span>{mistToSui(releasedAmount)} SUI</span>
+                  </div>
+                  <div className="flex justify-between text-[#4FC3F7]">
+                    <span>Kilitli Kalan:</span>
+                    <span>{mistToSui(lockedAmount)} SUI</span>
+                  </div>
                 </div>
               </div>
-            </Card>
+            </div>
 
-            <Card className="p-6 bg-card border-border/50 flex-1">
-              <h3 className="text-sm font-semibold flex items-center gap-2 mb-6">
-                <History size={16} /> Zincir Aktiviteleri
-              </h3>
-              <div className="space-y-6 relative before:absolute before:inset-0 before:ml-[11px] before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-border before:to-transparent">
+            <div className="border border-border bg-card flex-1">
+              <div className="px-8 py-5 border-b border-border">
+                <p className="font-mono text-xs text-muted-foreground uppercase tracking-widest flex items-center gap-2">
+                  <History size={14} className="text-[#4FC3F7]" /> ZİNCİR AKTİVİTELERİ
+                </p>
+              </div>
+              <div className="p-8 space-y-6 relative before:absolute before:inset-0 before:ml-[51px] before:h-full before:w-px before:bg-border">
                 {(() => {
                   const events = [];
                   
@@ -801,7 +797,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                     title: 'Sözleşme Başlatıldı',
                     desc: 'Sözleşme şartları on-chain kaydedildi.',
                     time: contract.created_at,
-                    icon: <FileText size={12} className="text-primary" />,
+                    icon: <FileText size={14} className="text-[#4FC3F7]" />,
                     status: 'success'
                   });
 
@@ -812,7 +808,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                       title: 'Escrow Fonlandı',
                       desc: `${mistToSui(contract.total_budget)} SUI güvenli kasaya alındı.`,
                       time: contract.created_at + 1000,
-                      icon: <Shield size={12} className="text-blue-500" />,
+                      icon: <Shield size={14} className="text-[#4FC3F7]" />,
                       status: 'success'
                     });
                   }
@@ -825,7 +821,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                         title: 'Ödeme Yapıldı',
                         desc: `${m.title} aşaması için fonlar serbest bırakıldı.`,
                         time: contract.created_at + 2000 + idx,
-                        icon: <CheckCircle2 size={12} className="text-green-500" />,
+                        icon: <CheckCircle2 size={14} className="text-emerald-400" />,
                         status: 'success'
                       });
                     } else if (m.is_completed) {
@@ -834,7 +830,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                         title: 'İş Teslim Edildi',
                         desc: `${m.title} aşaması tamamlandı, onay bekleniyor.`,
                         time: contract.created_at + 1500 + idx,
-                        icon: <UploadCloud size={12} className="text-primary" />,
+                        icon: <UploadCloud size={14} className="text-[#4FC3F7]" />,
                         status: 'pending'
                       });
                     }
@@ -847,7 +843,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                       title: 'Bağımsız Hakem Atandı',
                       desc: 'Uyuşmazlık çözümü için sistem tarafından tarafsız bir hakem görevlendirildi.',
                       time: contract.dispute_history[0]?.timestamp || contract.created_at + 5000,
-                      icon: <Scale size={12} className="text-destructive" />,
+                      icon: <Scale size={14} className="text-destructive" />,
                       status: 'danger'
                     });
                   }
@@ -859,7 +855,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                       title: 'İhtilaf Başlatıldı',
                       desc: d.reason,
                       time: d.timestamp,
-                      icon: <AlertTriangle size={12} className="text-destructive" />,
+                      icon: <AlertTriangle size={14} className="text-destructive" />,
                       status: 'error'
                     });
                   });
@@ -871,7 +867,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                       title: 'Hakem Kararı: İşin Devamı',
                       desc: 'Hakem tarafları dinledi ve işin kaldığı yerden devam etmesine karar verdi.',
                       time: Date.now(), // Mevcut durum için yaklaşık
-                      icon: <RotateCcw size={12} className="text-primary" />,
+                      icon: <RotateCcw size={14} className="text-[#4FC3F7]" />,
                       status: 'success'
                     });
                   }
@@ -882,7 +878,7 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                       title: 'Hakem Kararı: Uyuşmazlık Çözüldü',
                       desc: 'Hakem nihai kararını verdi ve ödemeyi uygun tarafa aktardı.',
                       time: Date.now(), // Mevcut durum için yaklaşık
-                      icon: <ShieldCheck size={12} className="text-green-600" />,
+                      icon: <ShieldCheck size={14} className="text-emerald-400" />,
                       status: 'success'
                     });
                   }
@@ -894,22 +890,22 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                       title: 'Sözleşme Tamamlandı',
                       desc: 'Tüm süreç başarıyla sonuçlandırıldı.',
                       time: Date.now(), // Yaklaşık
-                      icon: <CheckCircle2 size={12} className="text-green-600" />,
+                      icon: <CheckCircle2 size={14} className="text-emerald-400" />,
                       status: 'success'
                     });
                   }
 
                   return events.sort((a, b) => b.time - a.time).map((event) => (
-                    <div key={event.id} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
-                      <div className={`flex items-center justify-center w-6 h-6 rounded-full border ${event.status === 'error' ? 'border-destructive bg-destructive/10' : 'border-border bg-background'} shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 z-10 shadow-sm`}>
+                    <div key={event.id} className="relative flex items-start group">
+                      <div className={`flex items-center justify-center w-10 h-10 border ${event.status === 'error' || event.status === 'danger' ? 'border-destructive bg-destructive/10' : 'border-border bg-card'} shrink-0 z-10 mr-6`}>
                         {event.icon}
                       </div>
-                      <div className={`w-[calc(100%-2rem)] md:w-[calc(50%-1.5rem)] p-3 rounded-lg border border-border/50 ${event.status === 'error' ? 'bg-destructive/5 border-destructive/20' : 'bg-background'} ml-4 md:ml-0 hover:border-primary/30 transition-colors`}>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className={`text-xs font-semibold ${event.status === 'error' ? 'text-destructive' : 'text-foreground'}`}>{event.title}</span>
-                          <span className="text-[9px] text-muted-foreground">{formatTimestamp(event.time)}</span>
+                      <div className={`flex-1 p-4 border border-border ${event.status === 'error' || event.status === 'danger' ? 'bg-destructive/5 border-destructive/20' : 'bg-background'} transition-colors`}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className={`font-mono text-[10px] tracking-widest uppercase font-bold ${event.status === 'error' || event.status === 'danger' ? 'text-destructive' : 'text-foreground'}`}>{event.title}</span>
+                          <span className="font-mono text-[9px] text-muted-foreground uppercase">{formatTimestamp(event.time)}</span>
                         </div>
-                        <p className="text-[10px] text-muted-foreground line-clamp-2 leading-relaxed">
+                        <p className="text-xs text-muted-foreground leading-relaxed font-medium">
                           {event.desc}
                         </p>
                       </div>
@@ -917,54 +913,53 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
                   ));
                 })()}
               </div>
-            </Card>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Anlaşmazlık Başlatma Dialogu */}
       <Dialog open={isDisputeOpen} onOpenChange={setIsDisputeOpen}>
-        <DialogContent className="sm:max-w-[500px] border-destructive/20 shadow-2xl">
-          <DialogHeader>
-            <div className="w-12 h-12 rounded-full bg-destructive/10 flex items-center justify-center mb-4">
-              <AlertTriangle className="text-destructive" size={24} />
+        <DialogContent className="sm:max-w-[500px] border border-destructive/50 bg-background rounded-none shadow-2xl p-0 overflow-hidden">
+          <div className="bg-destructive/5 px-8 py-6 border-b border-destructive/20 flex flex-col items-center text-center">
+            <div className="w-16 h-16 rounded-none border border-destructive flex items-center justify-center mb-6 bg-background">
+              <AlertTriangle className="text-destructive" size={32} />
             </div>
-            <DialogTitle className="text-xl">Anlaşmazlık (İhtilaf) Başlat</DialogTitle>
-            <DialogDescription className="text-sm leading-relaxed">
+            <DialogTitle className="text-2xl font-black text-destructive tracking-tight uppercase">İhtilaf Başlat</DialogTitle>
+            <DialogDescription className="text-xs font-mono uppercase tracking-widest mt-4">
               Bu işlemi başlattığınızda sözleşme dondurulur ve platform yöneticileri hakem olarak sürece dahil olur. 
-              Lütfen sorunu ve talebinizi detaylıca açıklayın.
             </DialogDescription>
-          </DialogHeader>
+          </div>
           
-          <div className="py-6 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="reason" className="text-sm font-semibold">Anlaşmazlık Nedeni</Label>
+          <div className="p-8 space-y-6">
+            <div className="space-y-3">
+              <Label htmlFor="reason" className="text-xs font-mono font-bold uppercase tracking-widest text-foreground">Anlaşmazlık Nedeni</Label>
               <Textarea 
                 id="reason"
                 placeholder="Örn: İş zamanında teslim edilmedi veya kriterlere uygun değil..." 
-                className="min-h-[120px] bg-background border-border/80 focus-visible:ring-destructive/50 shadow-inner"
+                className="min-h-[140px] bg-secondary/20 border-border focus-visible:ring-destructive rounded-none text-sm font-mono"
                 value={disputeReason}
                 onChange={(e) => setDisputeReason(e.target.value)}
               />
             </div>
-            <div className="flex items-start gap-3 p-3 rounded-lg bg-secondary/30 text-[11px] text-muted-foreground border border-border/30">
-               <Info size={14} className="shrink-0 mt-0.5 text-primary" />
+            <div className="flex items-start gap-3 p-4 bg-[#4FC3F7]/5 text-[10px] font-mono text-[#4FC3F7] border border-[#4FC3F7]/20 uppercase tracking-widest leading-relaxed">
+               <Info size={16} className="shrink-0 text-[#4FC3F7]" />
                <p>İhtilaf başlatıldıktan sonra platform hakemleri her iki tarafın sunduğu kanıtları ve iş geçmişini inceleyerek fonların kime aktarılacağına karar verir.</p>
             </div>
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="ghost" onClick={() => setIsDisputeOpen(false)}>Vazgeç</Button>
+          <div className="p-8 pt-0 flex gap-4">
+            <Button variant="outline" onClick={() => setIsDisputeOpen(false)} className="flex-1 rounded-none border-border font-mono uppercase tracking-widest text-xs h-12">Vazgeç</Button>
             <Button 
               variant="destructive" 
-              className="gap-2"
+              className="flex-[2] rounded-none gap-2 font-bold uppercase tracking-widest text-xs h-12"
               onClick={handleDispute}
               disabled={isSubmittingProof || !disputeReason.trim()}
             >
               {isSubmittingProof ? <Loader2 size={16} className="animate-spin" /> : <ShieldAlert size={16} />}
               Resmi İhtilaf Başlat
             </Button>
-          </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -4,33 +4,45 @@ import { useState, useEffect, useRef } from "react";
 import { useCurrentAccount, useAccounts, useSwitchAccount, useDisconnectWallet, ConnectButton } from "@mysten/dapp-kit";
 import { useNotifications } from "@/contexts/NotificationContext";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
-  Bell,
-  Wallet,
-  ChevronRight,
-  CheckCircle2,
-  AlertCircle,
-  ChevronDown,
-  Copy,
-  ExternalLink,
-  LogOut
+  Bell, Wallet, ChevronDown, Copy, ExternalLink,
+  LogOut, CheckCircle2, AlertCircle, LayoutDashboard,
+  Search, FileText, Shield, AlertTriangle, Receipt, User, Gavel
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { useContracts } from "@/hooks/useContracts";
+
+const userNavItems = [
+  { href: "/dashboard", label: "Dashboard" },
+  { href: "/explore", label: "Keşfet" },
+  { href: "/contracts", label: "Sözleşmeler" },
+  { href: "/escrow", label: "Ödemeler" },
+  { href: "/disputes", label: "Anlaşmazlıklar" },
+  { href: "/invoices", label: "Faturalar" },
+  { href: "/profile", label: "Profil" },
+];
+
+const arbitratorNavItems = [
+  { href: "/arbitrator", label: "Hakem Portalı" },
+  { href: "/profile", label: "Profil" },
+];
 
 export default function Navbar() {
+  const pathname = usePathname();
   const account = useCurrentAccount();
   const accounts = useAccounts();
   const { mutate: switchAccount } = useSwitchAccount();
   const { mutate: disconnect } = useDisconnectWallet();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showWalletMenu, setShowWalletMenu] = useState(false);
+  const { notifications, unreadCount, markAllAsRead } = useNotifications();
+  const { isArbitrator } = useContracts(account?.address);
 
   const notifRef = useRef<HTMLDivElement>(null);
   const walletRef = useRef<HTMLDivElement>(null);
 
-  const { notifications, unreadCount, markAllAsRead } = useNotifications();
-
-  // Gerçek zamanlı arayüz (UI Zaman damgası güncelleme)
   const [, setTick] = useState(0);
   useEffect(() => {
     const timer = setInterval(() => setTick(t => t + 1), 10000);
@@ -57,154 +69,181 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  const navItems = isArbitrator ? arbitratorNavItems : userNavItems;
+
   return (
-    <header className="h-16 border-b border-border/50 bg-background/80 backdrop-blur-md sticky top-0 z-40 flex items-center justify-between px-6 md:px-8">
+    <header 
+      className="h-14 border-b border-border bg-card/95 backdrop-blur-md sticky top-0 flex items-center justify-between px-8 w-full"
+      style={{ zIndex: 9999 }}
+    >
 
-      {/* Sol Kısım: Sayfa Yolu (Kaldırıldı) */}
-      <div></div>
+      {/* Left: Logo + Nav Links */}
+      <div className="flex items-center gap-10">
+        {/* Logo */}
+        <Link href="/dashboard" className="font-black text-base tracking-tight shrink-0">
+          Work<span className="text-[#4FC3F7]">Seal</span>
+        </Link>
 
-      {/* Sağ Kısım: Ağ, Bildirimler ve Şık Cüzdan Menüsü */}
-      <div className="flex items-center gap-5 relative">
+        {/* Nav Links */}
+        <nav className="flex items-center gap-1">
+          {navItems.map(({ href, label }) => {
+            const active = pathname === href || pathname.startsWith(href + "/");
+            return (
+              <Link
+                key={href}
+                href={href}
+                className={cn(
+                  "px-3 py-1.5 text-sm transition-colors",
+                  active
+                    ? "text-[#4FC3F7] font-medium"
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {label}
+              </Link>
+            );
+          })}
+        </nav>
+      </div>
 
-        {/* Ağ Durumu */}
-        <Badge variant="outline" className="hidden md:flex items-center gap-1.5 bg-secondary/30 border-border/50 text-xs py-1">
-          <div className="w-1.5 h-1.5 rounded-full bg-blue-500 animate-pulse"></div>
+      {/* Right: Network + Notifications + Wallet */}
+      <div className="flex items-center gap-4">
+
+        {/* Network Badge */}
+        <div className="hidden md:flex items-center gap-1.5 text-xs text-muted-foreground font-mono">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
           Sui Testnet
-        </Badge>
+        </div>
 
-        {/* Bildirim Zili */}
+        {/* Notifications */}
         <div className="relative" ref={notifRef}>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`rounded-full transition-all ${showNotifications ? 'bg-secondary/80' : 'hover:bg-secondary/50'}`}
+          <button
+            className="relative p-2 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center"
             onClick={() => {
               setShowNotifications(!showNotifications);
+              setShowWalletMenu(false); // Force close wallet if open
               if (!showNotifications && unreadCount > 0) markAllAsRead();
             }}
           >
-            <Bell size={18} className="text-muted-foreground" />
+            <Bell size={18} />
             {unreadCount > 0 && (
-              <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-primary rounded-full border-2 border-background animate-pulse"></span>
+              <span className="absolute top-1 right-1 w-2 h-2 bg-[#4FC3F7] rounded-full border-2 border-card" />
             )}
-          </Button>
+          </button>
 
-          {/* Bildirim Çekmecesi */}
           {showNotifications && (
-            <div className="absolute right-0 mt-3 w-80 bg-card border border-border/50 rounded-xl shadow-lg p-4 animate-in slide-in-from-top-2 fade-in duration-200">
-              <div className="flex justify-between items-center mb-3">
-                <h4 className="text-sm font-semibold">Son Bildirimler</h4>
-                {unreadCount > 0 && <span className="text-xs bg-primary/20 text-primary px-2 py-0.5 rounded-full">{unreadCount} Yeni</span>}
-              </div>
-              <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
-                {notifications.length > 0 ? notifications.map((notif) => (
-                  <div key={notif.id} className={`flex gap-3 items-start p-2 rounded-lg transition-colors ${notif.read ? 'hover:bg-secondary/30' : 'bg-primary/5 border border-primary/10'}`}>
-                    {notif.type === "success" ? (
-                      <CheckCircle2 size={16} className="text-green-500 shrink-0 mt-0.5" />
-                    ) : notif.type === "error" ? (
-                      <AlertCircle size={16} className="text-destructive shrink-0 mt-0.5" />
-                    ) : (
-                      <Bell size={16} className="text-muted-foreground shrink-0 mt-0.5" />
-                    )}
-                    <div className="w-full">
-                      <div className="flex items-center justify-between gap-4">
-                        <p className={`text-xs font-medium ${!notif.read ? "text-primary" : "text-foreground"}`}>{notif.title}</p>
-                        <span className="text-[10px] text-muted-foreground/80 font-medium whitespace-nowrap">{formatTimeLabel(notif.timestamp)}</span>
+            <div 
+              className="absolute top-[calc(100%+0.75rem)] left-1/2 -translate-x-1/2 w-[320px] animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200 origin-top"
+              style={{ zIndex: 10000 }}
+            >
+              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-[#0d1117] border-t border-l border-border transform rotate-45" />
+              <div className="relative bg-[#0d1117] border border-border shadow-2xl p-4 rounded-md">
+                <div className="flex justify-between items-center mb-3">
+                  <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Bildirimler</p>
+                  {unreadCount > 0 && (
+                    <span className="font-mono text-[10px] text-[#4FC3F7]">{unreadCount} yeni</span>
+                  )}
+                </div>
+                <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
+                  {notifications.length > 0 ? notifications.map(notif => (
+                    <div key={notif.id} className={`flex gap-3 items-start p-3 border rounded-sm transition-colors ${notif.read ? 'border-border' : 'border-[#4FC3F7]/20 bg-[#4FC3F7]/5'}`}>
+                      {notif.type === "success"
+                        ? <CheckCircle2 size={14} className="text-emerald-400 shrink-0 mt-0.5" />
+                        : notif.type === "error"
+                        ? <AlertCircle size={14} className="text-destructive shrink-0 mt-0.5" />
+                        : <Bell size={14} className="text-muted-foreground shrink-0 mt-0.5" />
+                      }
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium truncate text-foreground">{notif.title}</p>
+                        <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{notif.description}</p>
+                        <p className="font-mono text-[10px] text-muted-foreground/50 mt-1">{formatTimeLabel(notif.timestamp)}</p>
                       </div>
-                      <p className="text-[10px] text-muted-foreground mt-0.5 leading-relaxed">{notif.description}</p>
                     </div>
-                  </div>
-                )) : (
-                  <p className="text-xs text-muted-foreground text-center py-4">Henüz bir bildiriminiz yok.</p>
-                )}
+                  )) : (
+                    <p className="text-xs text-muted-foreground text-center py-6 font-mono">Bildirim yok.</p>
+                  )}
+                </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Cüzdan Bölümü */}
+        {/* Wallet */}
         {account ? (
           <div className="relative" ref={walletRef}>
-            <Button
-              variant="outline"
-              onClick={() => setShowWalletMenu(!showWalletMenu)}
-              className="gap-2 border-primary/20 bg-primary/5 hover:bg-primary/10 transition-all rounded-full pl-2 pr-4 py-2 h-auto"
+            <button
+              onClick={() => {
+                setShowWalletMenu(!showWalletMenu);
+                setShowNotifications(false); // Force close notifications if open
+              }}
+              className="flex items-center gap-2 px-3 py-1.5 border border-border hover:border-[#4FC3F7]/40 transition-colors bg-card h-9"
             >
-              {/* Canlı Avatar (Gradyan) */}
-              <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-500 via-primary to-purple-500 shadow-inner flex items-center justify-center">
-                <Wallet size={14} className="text-white opacity-80" />
+              <div className="w-5 h-5 bg-[#4FC3F7]/20 flex items-center justify-center">
+                <Wallet size={11} className="text-[#4FC3F7]" />
               </div>
-              <div className="flex flex-col items-start text-left mx-1">
-                <span className="font-mono text-xs font-bold leading-none">
-                  {account.address.slice(0, 6)}...{account.address.slice(-4)}
-                </span>
-                <span className="text-[10px] text-muted-foreground font-medium mt-1">Sui Testnet</span>
-              </div>
-              <ChevronDown size={14} className="text-muted-foreground ml-1" />
-            </Button>
+              <span className="font-mono text-xs text-foreground">
+                {account.address.slice(0, 6)}...{account.address.slice(-4)}
+              </span>
+              <ChevronDown size={12} className="text-muted-foreground" />
+            </button>
 
-            {/* Açılır Cüzdan Menüsü */}
             {showWalletMenu && (
-              <div className="absolute right-0 mt-3 w-56 bg-card border border-border/50 rounded-xl shadow-xl p-2 animate-in slide-in-from-top-2 fade-in duration-200">
-                <Button variant="ghost" className="w-full justify-start gap-2 text-sm h-10 px-3 hover:bg-secondary/50" onClick={() => {
-                  navigator.clipboard.writeText(account.address);
-                  setShowWalletMenu(false);
-                }}>
-                  <Copy size={14} className="text-muted-foreground" /> Adresi Kopyala
-                </Button>
-                <Button variant="ghost" className="w-full justify-start gap-2 text-sm h-10 px-3 hover:bg-secondary/50" onClick={() => {
-                  window.open(`https://suivision.xyz/account/${account.address}`, "_blank");
-                  setShowWalletMenu(false);
-                }}>
-                  <ExternalLink size={14} className="text-muted-foreground" /> Explorer'da Görüntüle
-                </Button>
-                <div className="h-px bg-border/50 my-1 mx-2"></div>
-                <Button variant="ghost" className="w-full justify-start gap-2 text-sm h-10 px-3 text-destructive hover:bg-destructive/10 hover:text-destructive" onClick={() => {
-                  disconnect();
-                  setShowWalletMenu(false);
-                }}>
-                  <LogOut size={14} /> Bağlantıyı Kes
-                </Button>
+              <div 
+                className="absolute top-[calc(100%+0.75rem)] right-[-16px] w-[240px] animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200 origin-top"
+                style={{ zIndex: 10000 }}
+              >
+                <div className="absolute -top-1.5 right-[68px] w-3 h-3 bg-[#0d1117] border-t border-l border-border transform rotate-45" />
+                <div className="relative bg-[#0d1117] border border-border shadow-2xl rounded-md overflow-hidden">
+                  <button
+                    className="w-full flex items-center gap-2 px-4 py-3 text-xs text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors text-left"
+                    onClick={() => { navigator.clipboard.writeText(account.address); setShowWalletMenu(false); }}
+                  >
+                    <Copy size={13} /> Adresi Kopyala
+                  </button>
+                  <button
+                    className="w-full flex items-center gap-2 px-4 py-3 text-xs text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors text-left"
+                    onClick={() => { window.open(`https://suivision.xyz/account/${account.address}`, "_blank"); setShowWalletMenu(false); }}
+                  >
+                    <ExternalLink size={13} /> Explorer'da Gör
+                  </button>
+                  <div className="border-t border-border" />
+                  <button
+                    className="w-full flex items-center gap-2 px-4 py-3 text-xs text-destructive hover:bg-destructive/10 transition-colors text-left"
+                    onClick={() => { disconnect(); setShowWalletMenu(false); }}
+                  >
+                    <LogOut size={13} /> Bağlantıyı Kes
+                  </button>
 
-                {/* Hesap Değiştirici (Test için her zaman göster) */}
-                {accounts.length > 0 && (
-                  <>
-                    <div className="h-px bg-border/50 my-1 mx-2"></div>
-                    <div className="px-3 py-2 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                      Hesap Değiştir
-                    </div>
-                    <div className="max-h-40 overflow-y-auto px-1">
-                      {accounts.map((acc) => (
-                        <Button 
-                          key={acc.address}
-                          variant="ghost" 
-                          className={`w-full justify-start gap-2 text-xs h-9 px-2 mb-1 ${acc.address === account?.address ? 'bg-primary/10 text-primary hover:bg-primary/20' : 'hover:bg-secondary/50'}`} 
-                          onClick={() => {
-                            switchAccount({ account: acc });
-                            setShowWalletMenu(false);
-                          }}
-                        >
-                          <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${acc.address === account?.address ? 'bg-primary shadow-[0_0_5px_rgba(var(--primary),0.5)]' : 'bg-muted-foreground/30'}`}></div>
-                          <span className="truncate font-mono">
-                            {acc.address.slice(0, 6)}...{acc.address.slice(-4)}
-                          </span>
-                        </Button>
-                      ))}
-                    </div>
-                  </>
-                )}
+                  {accounts.length > 1 && (
+                    <>
+                      <div className="border-t border-border" />
+                      <div className="px-4 py-3">
+                        <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-3">Hesap Değiştir</p>
+                        <div className="max-h-40 overflow-y-auto pr-1">
+                          {accounts.map(acc => (
+                            <button
+                              key={acc.address}
+                              className={`w-full flex items-center gap-2 px-2 py-2 text-xs transition-colors text-left mb-1 font-mono rounded-sm ${acc.address === account.address ? 'text-[#4FC3F7] bg-[#4FC3F7]/5' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}`}
+                              onClick={() => { switchAccount({ account: acc }); setShowWalletMenu(false); }}
+                            >
+                              <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${acc.address === account.address ? 'bg-[#4FC3F7]' : 'bg-muted-foreground/30'}`} />
+                              <span className="truncate">{acc.address.slice(0, 6)}...{acc.address.slice(-4)}</span>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
               </div>
             )}
           </div>
         ) : (
-          <div className="wallet-button-override">
-            <ConnectButton
-              connectText="Cüzdan Bağla"
-              className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_15px_rgba(var(--primary),0.4)] transition-all rounded-full px-6 py-2 border-none h-10 text-sm font-semibold"
-            />
-          </div>
+          <ConnectButton
+            connectText="Cüzdan Bağla"
+            className="h-9 px-5 bg-[#4FC3F7] text-[#050810] font-bold text-sm hover:bg-[#4FC3F7]/90 border-none"
+          />
         )}
-
       </div>
     </header>
   );

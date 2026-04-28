@@ -1,15 +1,13 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { AlertTriangle, Clock, ChevronRight, FileText, CheckCircle2, Inbox } from "lucide-react";
+import { AlertTriangle, Clock, ChevronRight, FileText, CheckCircle2, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
 import { useContracts } from "@/hooks/useContracts";
 import { formatTimestamp } from "@/types";
 import { useCurrentAccount } from "@mysten/dapp-kit";
-import { Loader2 } from "lucide-react";
 
 export default function DisputesPage() {
   const account = useCurrentAccount();
@@ -19,85 +17,86 @@ export default function DisputesPage() {
     fetchAllContracts();
   }, [fetchAllContracts]);
   
-  // Normal kullanıcı sadece kendi taraf olduğu uyuşmazlıkları görür
   const myDisputes = contracts.filter(c => c.status === 3);
   const hasDisputes = myDisputes.length > 0;
 
-  if (loading) {
-    return (
-      <div className="max-w-6xl mx-auto py-20 flex flex-col items-center justify-center space-y-4">
-        <Loader2 className="animate-spin text-primary" size={40} />
-        <p className="text-sm text-muted-foreground">Uyuşmazlıklar kontrol ediliyor...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-      
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="w-full">
+      {/* ── Page Header ── */}
+      <div className="pb-10 border-b border-border flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10 px-2 pt-10">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground flex items-center gap-2">
+          <p className="font-mono text-[10px] text-[#4FC3F7]/60 tracking-widest uppercase mb-3">
+            HUKUK & ÇÖZÜM
+          </p>
+          <h1 className="text-5xl font-black tracking-tight leading-none">
             Anlaşmazlık Merkezi
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            İhtilaf durumundaki sözleşmeleriniz ve çözüm süreçleri.
-          </p>
         </div>
         <Link href="/contracts">
-          <Button variant="outline" className="gap-2 border-border/50">
+          <Button className="h-10 px-6 bg-transparent border border-border text-foreground font-bold text-sm hover:bg-white/[0.05] gap-2 rounded-none uppercase tracking-wider">
             <FileText size={16} /> Sözleşmelerime Dön
           </Button>
         </Link>
       </div>
 
-      {!hasDisputes ? (
-        <Card className="p-16 bg-card border-border/50 flex flex-col items-center justify-center text-center">
-          <div className="w-16 h-16 rounded-2xl bg-green-500/10 flex items-center justify-center mb-6">
-            <CheckCircle2 size={30} className="text-green-500" />
+      <div className="px-10 py-8">
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-40 gap-4">
+            <Loader2 className="animate-spin text-destructive" size={28} />
+            <p className="font-mono text-xs text-muted-foreground tracking-widest">KAYITLAR İNCELENİYOR</p>
           </div>
-          <h3 className="text-xl font-semibold text-foreground mb-2">Her Şey Yolunda!</h3>
-          <p className="text-sm text-muted-foreground mb-8 max-w-sm leading-relaxed">
-            Şu an için aktif bir anlaşmazlığınız bulunmuyor.
-          </p>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {myDisputes.map((contract) => {
-            const latestDispute = contract.dispute_history?.[contract.dispute_history.length - 1];
-            return (
-              <Link key={contract.id} href={`/contracts/${contract.id}`} className="block w-full">
-                <Card className="p-6 flex flex-col md:flex-row items-start md:items-center justify-between gap-6 cursor-pointer border border-destructive/30 hover:border-destructive/60 bg-card transition-all">
-                  <div className="flex gap-4 items-start flex-1">
-                    <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 bg-destructive/10">
-                      <AlertTriangle size={24} className="text-destructive animate-pulse" />
-                    </div>
-                    <div>
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-foreground">{contract.title}</h3>
-                        <Badge className="bg-destructive/20 text-destructive border-none">İncelemede</Badge>
+        ) : !hasDisputes ? (
+          <div className="flex flex-col items-center justify-center py-40 text-center border border-border bg-card">
+            <div className="w-16 h-16 rounded-none bg-emerald-400/10 flex items-center justify-center mb-6 border border-emerald-400/20">
+              <CheckCircle2 size={30} className="text-emerald-400" />
+            </div>
+            <h3 className="text-xl font-bold text-foreground mb-2">Her Şey Yolunda!</h3>
+            <p className="text-sm text-muted-foreground font-mono">
+              Şu an için aktif bir anlaşmazlığınız bulunmuyor.
+            </p>
+          </div>
+        ) : (
+          <div className="border border-destructive/30 bg-card divide-y divide-destructive/30">
+            {myDisputes.map((contract) => {
+              const latestDispute = contract.dispute_history?.[contract.dispute_history.length - 1];
+              return (
+                <Link key={contract.id} href={`/contracts/${contract.id}`} className="block w-full">
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-8 hover:bg-destructive/[0.02] transition-colors group cursor-pointer">
+                    <div className="flex gap-6 items-start flex-1">
+                      <div className="w-12 h-12 bg-destructive/10 border border-destructive/20 flex items-center justify-center shrink-0">
+                        <AlertTriangle size={24} className="text-destructive animate-pulse" />
                       </div>
-                      <p className="text-xs text-muted-foreground mb-2 flex items-center gap-2">
-                        <span>ID: {contract.id.slice(0, 10)}...</span>
-                        <span className="w-1 h-1 rounded-full bg-border"></span>
-                        <span className="flex items-center gap-1"><Clock size={12} /> {formatTimestamp(latestDispute?.timestamp || contract.created_at)}</span>
-                      </p>
-                      {latestDispute && (
-                        <p className="text-sm text-foreground/80 line-clamp-2 bg-secondary/30 p-2 rounded border border-border/50">
-                          {latestDispute.reason}
-                        </p>
-                      )}
+                      <div>
+                        <div className="flex flex-wrap items-center gap-3 mb-2">
+                          <h3 className="text-lg font-bold text-foreground group-hover:text-[#4FC3F7] transition-colors line-clamp-1">{contract.title}</h3>
+                          <span className="font-mono text-[10px] px-2 py-1 bg-destructive/10 text-destructive border border-destructive/20 uppercase tracking-wider">
+                            İncelemede
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4 mt-2">
+                          <p className="font-mono text-[10px] text-muted-foreground">ID: {contract.id.slice(0, 10)}...</p>
+                          <span className="text-[10px] text-muted-foreground/50">·</span>
+                          <p className="font-mono text-[10px] text-muted-foreground flex items-center gap-1">
+                            <Clock size={10} /> {formatTimestamp(latestDispute?.timestamp || contract.created_at)}
+                          </p>
+                        </div>
+                        {latestDispute && (
+                          <div className="mt-4 p-4 border border-destructive/20 bg-destructive/5 font-mono text-xs text-foreground/80 leading-relaxed border-l-2 border-l-destructive">
+                            {latestDispute.reason}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="mt-6 md:mt-0 flex items-center gap-2 text-muted-foreground group-hover:text-destructive transition-colors font-mono text-xs uppercase tracking-widest font-bold">
+                      Detaylar <ChevronRight size={14} className="group-hover:translate-x-1 transition-transform" />
                     </div>
                   </div>
-                  <Button variant="ghost" className="gap-2">
-                    Detaylar <ChevronRight size={16} />
-                  </Button>
-                </Card>
-              </Link>
-            );
-          })}
-        </div>
-      )}
+                </Link>
+              );
+            })}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

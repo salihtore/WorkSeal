@@ -14,7 +14,8 @@ import {
   ShieldCheck, 
   AlertCircle,
   Briefcase,
-  Inbox
+  Inbox,
+  ArrowRight
 } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
@@ -47,113 +48,156 @@ export default function ArbitratorPortalPage() {
 
   if (!isArbitrator && !loading) {
     return (
-      <div className="max-w-6xl mx-auto py-20 text-center space-y-4">
-         <div className="w-20 h-20 bg-destructive/10 text-destructive rounded-full flex items-center justify-center mx-auto mb-6">
-            <AlertCircle size={40} />
-         </div>
-         <h1 className="text-2xl font-bold">Yetkisiz Erişim</h1>
-         <p className="text-muted-foreground">Bu sayfaya sadece kayıtlı sistem hakemleri erişebilir.</p>
-         <Link href="/dashboard"><Button>Geri Dön</Button></Link>
+      <div className="flex flex-col items-center justify-center py-40 text-center">
+        <span className="text-8xl font-black text-border mb-6">!</span>
+        <h1 className="text-2xl font-black tracking-tight mb-2">Yetkisiz Erişim</h1>
+        <p className="text-muted-foreground text-sm font-mono mb-8">Bu sayfaya sadece kayıtlı sistem hakemleri erişebilir.</p>
+        <Link href="/dashboard">
+          <Button className="h-10 px-8 bg-[#4FC3F7] text-[#050810] font-bold text-sm hover:bg-[#4FC3F7]/90">
+            Dashboard'a Dön
+          </Button>
+        </Link>
       </div>
     );
   }
 
   if (loading) {
     return (
-      <div className="max-w-6xl mx-auto py-20 flex flex-col items-center justify-center space-y-4">
-        <Loader2 className="animate-spin text-primary" size={48} />
-        <p className="text-muted-foreground animate-pulse font-medium">Yargı Verileri Yükleniyor...</p>
+      <div className="flex flex-col items-center justify-center py-40 gap-4">
+        <Loader2 className="animate-spin text-[#4FC3F7]" size={28} />
+        <p className="font-mono text-xs text-muted-foreground tracking-widest">YARGI VERİLERİ YÜKLENİYOR</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8 animate-in fade-in duration-500">
-      <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-        <div className="space-y-1">
-          <h1 className="text-4xl font-extrabold tracking-tight text-foreground flex items-center gap-3">
-            <Gavel className="text-primary" size={36} />
-            Yargı ve Uyuşmazlık Yönetimi
-          </h1>
-          <p className="text-muted-foreground font-medium">
-            Sistem hakemi olarak tarafsız karar verme ve adaleti sağlama yetkiniz aktif.
+    <div className="max-w-6xl mx-auto px-2 py-10 space-y-0">
+      {/* ── Page Header ── */}
+      <div className="pb-10 border-b border-border flex items-end justify-between">
+        <div>
+          <p className="font-mono text-[10px] text-[#4FC3F7]/60 tracking-widest uppercase mb-3">
+            <Scale size={10} className="inline mr-1" /> Sistem Hakemi Yetkisi Aktif
           </p>
+          <h1 className="text-5xl font-black tracking-tight leading-none">
+            Yargı Yönetimi
+          </h1>
         </div>
-        <Badge className="bg-primary/10 text-primary border-primary/20 px-4 py-1.5 text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-          <Scale size={14} /> Sistem Hakemi Yetkisi Aktif
-        </Badge>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <Card className="p-6 bg-gradient-to-br from-card to-card/50 border-border/50 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><AlertCircle size={80} /></div>
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Karar Bekleyen</p>
-          <h3 className="text-3xl font-mono font-bold text-destructive">{stats.totalActive} Dosya</h3>
-        </Card>
-        <Card className="p-6 bg-gradient-to-br from-card to-card/50 border-border/50 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><ShieldCheck size={80} /></div>
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Çözümlenen</p>
-          <h3 className="text-3xl font-mono font-bold text-green-500">{stats.totalResolved} Karar</h3>
-        </Card>
-        <Card className="p-6 bg-gradient-to-br from-card to-card/50 border-border/50 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-4 opacity-5 group-hover:opacity-10 transition-opacity"><History size={80} /></div>
-          <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-1">Devam Ettirilen</p>
-          <h3 className="text-3xl font-mono font-bold text-blue-500">{stats.totalResumed} İş</h3>
-        </Card>
-      </div>
-
-      <div className="flex gap-2 border-b border-border/50 pb-px">
-        <button onClick={() => setActiveTab("active")} className={`px-6 py-3 text-sm font-bold transition-all relative ${activeTab === "active" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}>
-          <div className="flex items-center gap-2"><AlertCircle size={16} /> Bekleyen Dosyalar <Badge className="ml-1 bg-primary/10 text-primary border-none">{activeDisputes.length}</Badge></div>
+      {/* ── Tabs ── */}
+      <div className="flex items-center gap-0 border-b border-border mb-10">
+        <button
+          onClick={() => setActiveTab("active")}
+          className={`px-6 py-4 text-sm font-medium transition-all border-b-2 -mb-px flex items-center gap-2 ${
+            activeTab === "active"
+              ? "border-[#4FC3F7] text-[#4FC3F7]"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Bekleyen Dosyalar
+          <span className={`font-mono text-[10px] px-2 py-0.5 ${
+            activeTab === "active" ? "bg-[#4FC3F7]/10 text-[#4FC3F7]" : "bg-muted text-muted-foreground"
+          }`}>
+            {activeDisputes.length}
+          </span>
         </button>
-        <button onClick={() => setActiveTab("history")} className={`px-6 py-3 text-sm font-bold transition-all relative ${activeTab === "history" ? "text-primary border-b-2 border-primary" : "text-muted-foreground hover:text-foreground"}`}>
-          <div className="flex items-center gap-2"><History size={16} /> Geçmiş Kararlarım <Badge className="ml-1 bg-secondary text-muted-foreground border-none">{historyDisputes.length}</Badge></div>
+        <button
+          onClick={() => setActiveTab("history")}
+          className={`px-6 py-4 text-sm font-medium transition-all border-b-2 -mb-px flex items-center gap-2 ${
+            activeTab === "history"
+              ? "border-[#4FC3F7] text-[#4FC3F7]"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          }`}
+        >
+          Geçmiş Kararlarım
+          <span className={`font-mono text-[10px] px-2 py-0.5 ${
+            activeTab === "history" ? "bg-[#4FC3F7]/10 text-[#4FC3F7]" : "bg-muted text-muted-foreground"
+          }`}>
+            {historyDisputes.length}
+          </span>
         </button>
       </div>
 
-      {!hasItems ? (
-        <Card className="p-20 bg-card border-border/50 flex flex-col items-center justify-center text-center">
-          <div className="w-20 h-20 rounded-3xl bg-secondary flex items-center justify-center mb-6 text-muted-foreground"><Inbox size={40} /></div>
-          <h3 className="text-xl font-bold text-foreground mb-2">Her Şey Güncel</h3>
-          <p className="text-sm text-muted-foreground mb-8 max-w-sm leading-relaxed">Şu an için {activeTab === "active" ? "karar bekleyen bir dosya bulunmuyor." : "henüz bir karar geçmişiniz yok."}</p>
-        </Card>
-      ) : (
-        <div className="grid grid-cols-1 gap-4">
-          {currentList.map((contract) => {
-            const latestDispute = contract.dispute_history?.[contract.dispute_history.length - 1];
-            return (
-              <Link key={contract.id} href={`/contracts/${contract.id}`} className="block group">
-                <Card className="p-6 border-border/50 bg-card hover:border-primary/40 transition-all shadow-sm hover:shadow-md relative overflow-hidden">
-                  <div className={`absolute left-0 top-0 bottom-0 w-1 ${activeTab === "active" ? "bg-destructive" : "bg-green-500"}`} />
-                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-                    <div className="flex gap-5 items-start flex-1">
-                      <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${activeTab === "active" ? "bg-destructive/10 text-destructive" : "bg-green-500/10 text-green-500"}`}>{activeTab === "active" ? <Gavel size={28} /> : <ShieldCheck size={28} />}</div>
+      <div className="space-y-10">
+        {/* ── Stats ── */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border mb-px">
+          <div className="bg-card p-8 group hover:bg-white/[0.02] transition-colors">
+            <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-4">Karar Bekleyen</p>
+            <p className="text-4xl font-black font-mono text-[#F87171]">
+              {stats.totalActive} <span className="text-sm font-bold text-muted-foreground">Dosya</span>
+            </p>
+          </div>
+          <div className="bg-card p-8 group hover:bg-white/[0.02] transition-colors">
+            <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-4">Çözümlenen</p>
+            <p className="text-4xl font-black font-mono text-emerald-400">
+              {stats.totalResolved} <span className="text-sm font-bold text-muted-foreground">Karar</span>
+            </p>
+          </div>
+          <div className="bg-card p-8 group hover:bg-white/[0.02] transition-colors">
+            <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-4">Devam Ettirilen</p>
+            <p className="text-4xl font-black font-mono text-[#4FC3F7]">
+              {stats.totalResumed} <span className="text-sm font-bold text-muted-foreground">İş</span>
+            </p>
+          </div>
+        </div>
+
+        {/* ── List ── */}
+        <div className="border border-border bg-card">
+          <div className="flex items-center justify-between px-8 py-5 border-b border-border">
+            <p className="font-mono text-xs text-muted-foreground uppercase tracking-widest">
+              {activeTab === "active" ? "Bekleyen Dosyalar" : "Geçmiş Kararlarım"}
+            </p>
+          </div>
+          <div className="divide-y divide-border">
+            {!hasItems ? (
+              <div className="flex flex-col items-center justify-center py-20 text-center">
+                <span className="text-8xl font-black text-border mb-6">·</span>
+                <p className="text-muted-foreground text-sm font-mono">
+                  {activeTab === "active" ? "Şu an için karar bekleyen bir dosya bulunmuyor." : "Henüz bir karar geçmişiniz yok."}
+                </p>
+              </div>
+            ) : (
+              currentList.map((contract) => {
+                const latestDispute = contract.dispute_history?.[contract.dispute_history.length - 1];
+                return (
+                  <Link key={contract.id} href={`/contracts/${contract.id}`}>
+                    <div className="flex items-center justify-between px-8 py-5 hover:bg-white/[0.025] transition-colors group">
                       <div className="space-y-1">
-                        <div className="flex flex-wrap items-center gap-2 mb-1">
-                          <h3 className="text-lg font-bold text-foreground group-hover:text-primary transition-colors">{contract.title}</h3>
-                          <Badge className={activeTab === "active" ? "bg-destructive/10 text-destructive border-destructive/20" : "bg-green-500/10 text-green-500 border-green-500/20"}>{activeTab === "active" ? "KARAR BEKLİYOR" : "KARARA BAĞLANDI"}</Badge>
+                        <div className="flex items-center gap-3">
+                          <p className="font-medium text-sm group-hover:text-[#4FC3F7] transition-colors">
+                            {contract.title}
+                          </p>
+                          <span className={`font-mono text-[10px] px-2 py-0.5 ${
+                            activeTab === "active" ? "bg-[#F87171]/10 text-[#F87171]" : "bg-emerald-400/10 text-emerald-400"
+                          }`}>
+                            {activeTab === "active" ? "KARAR BEKLİYOR" : "KARARA BAĞLANDI"}
+                          </span>
                         </div>
-                        <div className="text-xs text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-1 font-medium">
-                          <span className="flex items-center gap-1.5"><Briefcase size={14} className="text-primary" /> {contract.id.slice(0, 12)}...</span>
-                          <span className="flex items-center gap-1.5"><Clock size={14} /> {formatTimestamp(latestDispute?.timestamp || contract.created_at)}</span>
+                        <div className="flex items-center gap-3">
+                          <p className="font-mono text-[10px] text-muted-foreground">
+                            ID: {contract.id.slice(0, 14)}...
+                          </p>
+                          {latestDispute && (
+                            <p className="font-mono text-[10px] text-muted-foreground/60 italic truncate max-w-[300px]">
+                              "{latestDispute.reason}"
+                            </p>
+                          )}
                         </div>
-                        {latestDispute && (
-                          <div className="mt-4 p-3 rounded-xl bg-secondary/30 border border-border/50"><p className="text-sm text-foreground/80 italic">"{latestDispute.reason}"</p></div>
-                        )}
+                      </div>
+                      <div className="flex items-center gap-6 text-right">
+                        <p className="font-mono text-sm font-bold text-[#4FC3F7]">
+                          {Number(contract.total_budget) / 1_000_000_000} SUI
+                        </p>
+                        <ArrowRight size={14} className="text-muted-foreground group-hover:text-[#4FC3F7] group-hover:translate-x-1 transition-all" />
                       </div>
                     </div>
-                    <div className="flex flex-col items-end gap-3 shrink-0 text-right">
-                      <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest">Sözleşme Tutarı</p>
-                      <p className="text-xl font-mono font-bold text-primary">{Number(contract.total_budget) / 1_000_000_000} <span className="text-xs">SUI</span></p>
-                      <Button size="sm" className="gap-2 bg-secondary text-foreground hover:bg-primary hover:text-white rounded-full px-6">{activeTab === "active" ? "Dosyayı İncele" : "Kararı Gör"} <ChevronRight size={14} /></Button>
-                    </div>
-                  </div>
-                </Card>
-              </Link>
-            );
-          })}
+                  </Link>
+                );
+              })
+            )}
+          </div>
         </div>
-      )}
+      </div>
     </div>
   );
 }

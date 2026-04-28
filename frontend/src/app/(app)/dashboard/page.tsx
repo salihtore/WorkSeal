@@ -1,198 +1,237 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import {
-  FileText,
-  ShieldCheck,
-  Hourglass,
-  AlertTriangle,
-  Plus,
-  Rocket,
-  Zap,
-  Loader2 // EKLENEN: Yükleme ikonu
-} from "lucide-react";
-import Link from "next/link";
-
-// EKLENEN: Blockchain bağlantıları için gerekli hook ve tipler
-import { useEffect, useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { useCurrentAccount } from "@mysten/dapp-kit";
 import { useContracts } from "@/hooks/useContracts";
 import { useRouter } from "next/navigation";
 import { mistToSui, getStatusLabel, getStatusColor } from "@/types";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ArrowRight, Plus, Loader2, FileText, Zap, ShieldCheck, AlertTriangle } from "lucide-react";
+
+const TABS = ["Genel Bakış", "Pazar Yeri", "Sözleşmelerim"];
 
 export default function DashboardPage() {
   const account = useCurrentAccount();
   const router = useRouter();
-  const { contracts, loading, isArbitrator, fetchAllContracts } = useContracts(account?.address);
+  const { contracts, loading, isArbitrator } = useContracts(account?.address);
+  const [activeTab, setActiveTab] = useState("Genel Bakış");
 
-  useEffect(() => {
-    fetchAllContracts();
-  }, [fetchAllContracts]);
-
-  // HAKEM İZOLASYONU: Hakem ise ana dashboard'u görmesin, portalına gitsin
   useEffect(() => {
     if (isArbitrator && !loading) {
       router.push("/arbitrator");
     }
   }, [isArbitrator, loading, router]);
 
-  // DEĞİŞTİRİLEN: Sadece sizin olanları değil, freelancer bekleyen tüm açık işleri de göster
-  const visibleContracts = useMemo(() => {
-    if (!account) return contracts;
-    return contracts.filter(
-      (c) => 
-        c.client === account.address || 
-        c.freelancer === account.address || 
-        !c.freelancer // Freelancer atanmamış (Açık İşler)
-    );
-  }, [contracts, account]);
-
-  // Sadece size ait olanlar (İstatistikler için)
   const myContracts = useMemo(() => {
     if (!account) return [];
     return contracts.filter(
-      (c) => c.client === account.address || c.freelancer === account.address
+      c => c.client === account.address || c.freelancer === account.address
     );
   }, [contracts, account]);
 
-  // EKLENEN: İstatistikleri hesapla
-  const activeContractsCount = myContracts.filter(c => c.status === 1).length;
-  const disputedContractsCount = myContracts.filter(c => c.status === 3).length;
-  
-  // Sadece aktif (status === 1) sözleşmelerin toplam MIST bütçesini toplayıp SUI'ye çeviriyoruz
-  const totalEscrowMist = myContracts
-    .filter(c => c.status === 1)
-    .reduce((acc, c) => acc + BigInt(c.total_budget), 0n);
-  
-  const pendingPaymentMist = myContracts
-    .filter(c => c.status === 0) // Henüz fonlanmamış (Bekleyen)
-    .reduce((acc, c) => acc + BigInt(c.total_budget), 0n);
+  const openJobs = useMemo(() => {
+    return contracts.filter(
+      c => !c.freelancer ||
+        c.freelancer === "0x0000000000000000000000000000000000000000000000000000000000000000"
+    ).slice(0, 6);
+  }, [contracts]);
 
-  // DEĞİŞTİRİLEN: Statik veriler yerine yukarıda hesapladığımız dinamik verileri koyduk
-  const stats = [
-    { title: "Aktif Sözleşme", value: activeContractsCount.toString(), icon: FileText, color: "text-primary" },
-    { title: "Escrow'da Bakiye (SUI)", value: mistToSui(totalEscrowMist), icon: ShieldCheck, color: "text-green-500" },
-    { title: "Bekleyen Ödeme (SUI)", value: mistToSui(pendingPaymentMist), icon: Hourglass, color: "text-yellow-500" },
-    { title: "Açık Anlaşmazlık", value: disputedContractsCount.toString(), icon: AlertTriangle, color: "text-destructive" },
-  ];
+  const stats = useMemo(() => {
+    const active = myContracts.filter(c => c.status === 1).length;
+    const disputed = myContracts.filter(c => c.status === 3).length;
+    const escrow = myContracts
+      .filter(c => c.status === 1)
+      .reduce((acc, c) => acc + BigInt(c.total_budget), 0n);
+    return { active, disputed, escrow: mistToSui(escrow) };
+  }, [myContracts]);
 
   return (
-    <div className="max-w-7xl mx-auto space-y-10">
+    <div className="max-w-6xl mx-auto px-2 py-10 space-y-0">
 
-      {/* Header & Quick Action */}
-      <div className="flex items-center justify-between">
+      {/* ── Page Header ── */}
+      <div className="pb-10 border-b border-border flex items-end justify-between">
+        <div>
+          <p className="font-mono text-[10px] text-[#4FC3F7]/60 tracking-widest uppercase mb-3">
+            Sui Testnet · {account?.address.slice(0, 8)}...{account?.address.slice(-4)}
+          </p>
+          <h1 className="text-5xl font-black tracking-tight leading-none">
+            Dashboard
+          </h1>
+        </div>
         <Link href="/contracts/new">
-          <Button className="gap-2 bg-primary hover:bg-primary/90 text-white shadow-[0_0_15px_rgba(var(--primary),0.3)] transition-all hover:scale-105">
-            <Plus size={16} /> Yeni Sözleşme Oluştur
+          <Button className="h-10 px-6 bg-[#4FC3F7] text-[#050810] font-bold text-sm hover:bg-[#4FC3F7]/90 gap-2">
+            <Plus size={16} /> Yeni Sözleşme
           </Button>
         </Link>
       </div>
 
-      {/* Stats Grid - Modern Glow Effect */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        {stats.map((stat) => (
-          <Card key={stat.title} className="p-6 bg-card border-border/50 relative overflow-hidden group hover:border-primary/30 transition-all duration-300">
-            <div className="absolute -inset-px bg-gradient-to-r from-primary/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity blur-sm" />
-
-            <div className="relative flex items-center justify-between gap-4">
-              <div>
-                <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">{stat.title}</p>
-                {/* DEĞİŞTİRİLEN: Değerleri dinamik yaptık */}
-                <p className="text-3xl font-mono font-bold mt-1 text-foreground">{stat.value}</p>
-                {/* DEĞİŞTİRİLEN: Backend bekleniyor yazısını duruma göre güncelledik */}
-                <p className="text-[10px] text-muted-foreground/60 mt-1">
-                  {loading ? "Ağdan güncelleniyor..." : "Sui Ağı Güncel Verisi"}
-                </p>
-              </div>
-              <div className={`p-3 rounded-xl bg-secondary ${stat.color} group-hover:bg-primary/10 transition-colors`}>
-                <stat.icon size={22} strokeWidth={1.5} />
-              </div>
-            </div>
-          </Card>
+      {/* ── Tabs ── */}
+      <div className="flex items-center gap-0 border-b border-border mb-10">
+        {TABS.map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`px-6 py-4 text-sm font-medium transition-all border-b-2 -mb-px ${
+              activeTab === tab
+                ? "border-[#4FC3F7] text-[#4FC3F7]"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            {tab}
+          </button>
         ))}
       </div>
 
-      {/* Son Sözleşmeler - Modern Empty State */}
-      <Card className="p-8 bg-card border-border/50 min-h-[400px] flex flex-col">
-        <div className="flex items-center justify-between mb-8">
-          <h2 className="text-xl font-semibold">Son Sözleşmeler</h2>
-          <Button variant="outline" size="sm" className="border-border/50 text-xs">Tümünü Gör</Button>
-        </div>
-
-        {/* EKLENEN/DEĞİŞTİRİLEN: Cüzdan bağlı değilse, Yükleniyorsa, Veri Varsa ve Veri Yoksa durumları */}
-        {!account ? (
-          <div className="flex-1 flex flex-col items-center justify-center py-16 text-center">
-            <ShieldCheck size={48} className="text-muted-foreground/50 mb-4" />
-            <h3 className="text-lg font-semibold text-foreground">Cüzdan Bağlantısı Gerekli</h3>
-            <p className="text-sm text-muted-foreground mt-1 max-w-sm mb-6">
-              Sözleşmelerinizi görüntüleyebilmek için lütfen sağ üst köşeden Web3 cüzdanınızı bağlayın.
-            </p>
-          </div>
-        ) : loading ? (
-          <div className="flex-1 flex flex-col items-center justify-center py-16 text-center opacity-60">
-            <Loader2 className="animate-spin text-primary mb-4" size={40} />
-            <p className="text-sm text-muted-foreground">Blockchain'den verileriniz çekiliyor...</p>
-          </div>
-        ) : visibleContracts.length > 0 ? (
-          <div className="space-y-4 animate-in fade-in duration-500">
-            {visibleContracts.map((contract) => (
-              <div key={contract.id} className="flex items-center justify-between p-5 rounded-2xl bg-secondary/20 border border-border/50 hover:border-primary/30 transition-colors group">
-                <div className="flex items-center gap-4">
-                  <div className="p-3 rounded-xl bg-background border border-border group-hover:bg-primary/10 transition-colors">
-                    <FileText size={20} className="text-primary" />
-                  </div>
-                  <div>
-                    <h3 className="font-semibold text-foreground text-base">{contract.title}</h3>
-                    <p className="text-xs text-muted-foreground mt-0.5">
-                      {contract.client === account?.address ? (
-                        <span className="text-primary font-medium">Sizin Oluşturduğunuz (Müşteri)</span>
-                      ) : contract.freelancer === account?.address ? (
-                        <span className="text-green-500 font-medium">Sizin Üstlendiğiniz (Freelancer)</span>
-                      ) : (
-                        <span className="text-yellow-500 font-medium">Açık İş (Freelancer Bekleniyor)</span>
-                      )}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-6">
-                  <div className="text-right">
-                    <p className="text-sm font-mono font-bold">{mistToSui(contract.total_budget)} SUI</p>
-                    <p className="text-[10px] text-muted-foreground">Toplam Bütçe</p>
-                  </div>
-                  <div className={`px-3 py-1.5 rounded-lg text-xs font-semibold ${getStatusColor(contract.status)}`}>
-                    {getStatusLabel(contract.status)}
-                  </div>
-                  <Link href={`/contracts/${contract.id}`}>
-                    <Button variant="ghost" size="sm" className="opacity-0 group-hover:opacity-100 transition-opacity">
-                      Detaylar
-                    </Button>
-                  </Link>
-                </div>
+      {/* ── GENEL BAKIŞ ── */}
+      {activeTab === "Genel Bakış" && (
+        <div className="space-y-0">
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-px bg-border mb-px">
+            {[
+              { label: "Aktif İş", value: stats.active.toString(), icon: Zap, accent: true },
+              { label: "Escrow (SUI)", value: stats.escrow, icon: ShieldCheck, accent: false },
+              { label: "Anlaşmazlık", value: stats.disputed.toString(), icon: AlertTriangle, accent: false },
+            ].map(({ label, value, icon: Icon, accent }) => (
+              <div key={label} className="bg-card p-8 group hover:bg-white/[0.02] transition-colors">
+                <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest mb-4">{label}</p>
+                <p className={`text-4xl font-black font-mono ${accent ? "text-[#4FC3F7]" : "text-foreground"}`}>
+                  {loading ? <span className="animate-pulse opacity-30">—</span> : value}
+                </p>
               </div>
             ))}
           </div>
-        ) : (
-          /* Senin Kusursuz Boş Durum (Empty State) Tasarımın */
-          <div className="flex-1 flex flex-col items-center justify-center py-16 text-center rounded-2xl bg-secondary/20 border border-dashed border-border/50 space-y-5 animate-in fade-in-50 duration-500">
-            <div className="p-5 rounded-full bg-primary/10 border border-primary/20 shadow-inner">
-              <Rocket size={40} className="text-primary animate-pulse" />
+
+          {/* Recent Contracts */}
+          <div className="border border-border bg-card">
+            <div className="flex items-center justify-between px-8 py-5 border-b border-border">
+              <p className="font-mono text-xs text-muted-foreground uppercase tracking-widest">Son İşlemlerim</p>
+              <button
+                onClick={() => setActiveTab("Sözleşmelerim")}
+                className="font-mono text-[10px] text-[#4FC3F7] hover:opacity-70 transition-opacity flex items-center gap-1"
+              >
+                Tümü <ArrowRight size={10} />
+              </button>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold text-foreground">Henüz bir sözleşme oluşturmadın.</h3>
-              <p className="text-sm text-muted-foreground mt-1 max-w-sm">
-                İşveren veya freelancer olarak ilk güvenli anlaşmanı saniyeler içinde başlatabilirsin.
-              </p>
+            <div className="divide-y divide-border">
+              {loading ? (
+                <div className="flex items-center justify-center py-16">
+                  <Loader2 size={20} className="animate-spin text-[#4FC3F7]/40" />
+                </div>
+              ) : myContracts.length === 0 ? (
+                <div className="py-16 text-center">
+                  <p className="font-mono text-xs text-muted-foreground">Henüz işlem yok.</p>
+                  <Link href="/contracts/new">
+                    <Button className="mt-6 h-9 px-6 bg-[#4FC3F7] text-[#050810] font-bold text-xs">
+                      İlk Sözleşmeni Oluştur
+                    </Button>
+                  </Link>
+                </div>
+              ) : (
+                myContracts.slice(0, 4).map(c => (
+                  <Link key={c.id} href={`/contracts/${c.id}`}>
+                    <div className="flex items-center justify-between px-8 py-5 hover:bg-white/[0.025] transition-colors group">
+                      <div>
+                        <p className="font-medium text-sm group-hover:text-[#4FC3F7] transition-colors">{c.title}</p>
+                        <p className="font-mono text-[10px] text-muted-foreground mt-1">{c.id.slice(0, 14)}...</p>
+                      </div>
+                      <div className="flex items-center gap-6 text-right">
+                        <p className="font-mono text-sm font-bold text-[#4FC3F7]">{mistToSui(c.total_budget)} SUI</p>
+                        <span className={`font-mono text-[10px] px-2 py-1 ${getStatusColor(c.status)}`}>
+                          {getStatusLabel(c.status)}
+                        </span>
+                      </div>
+                    </div>
+                  </Link>
+                ))
+              )}
             </div>
-            <Link href="/contracts/new">
-              <Button className="gap-2 bg-background border border-primary/30 text-foreground hover:bg-primary/10">
-                <Zap size={14} className="text-primary" /> İlk Sözleşmeni Oluştur
-              </Button>
+          </div>
+        </div>
+      )}
+
+      {/* ── PAZAR YERİ ── */}
+      {activeTab === "Pazar Yeri" && (
+        <div className="space-y-0">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-px bg-border">
+            {loading ? (
+              <div className="col-span-full py-20 flex items-center justify-center">
+                <Loader2 size={20} className="animate-spin text-[#4FC3F7]/40" />
+              </div>
+            ) : openJobs.length === 0 ? (
+              <div className="col-span-full bg-card py-20 text-center">
+                <p className="font-mono text-xs text-muted-foreground">Açık iş bulunamadı.</p>
+              </div>
+            ) : (
+              openJobs.map(job => (
+                <Link key={job.id} href={`/contracts/${job.id}`}>
+                  <div className="bg-card p-8 group hover:bg-white/[0.03] transition-all cursor-pointer h-full flex flex-col min-h-[200px]">
+                    <div className="flex items-center justify-between mb-5">
+                      <span className="font-mono text-xl font-bold text-[#4FC3F7]">
+                        {mistToSui(job.total_budget)}
+                        <span className="text-xs text-[#4FC3F7]/50 ml-1">SUI</span>
+                      </span>
+                      <ArrowRight size={14} className="text-muted-foreground group-hover:text-[#4FC3F7] group-hover:translate-x-1 transition-all" />
+                    </div>
+                    <p className="font-bold text-sm group-hover:text-[#4FC3F7] transition-colors line-clamp-1 mb-2">{job.title}</p>
+                    <p className="text-xs text-muted-foreground line-clamp-2 flex-1 leading-relaxed">
+                      {job.description || "Açıklama belirtilmemiş."}
+                    </p>
+                    <p className="font-mono text-[10px] text-muted-foreground mt-4 pt-4 border-t border-border">
+                      {job.client.slice(0, 8)}...
+                    </p>
+                  </div>
+                </Link>
+              ))
+            )}
+            {/* "Daha Fazla" tile */}
+            <Link href="/explore">
+              <div className="bg-card p-8 hover:bg-white/[0.03] transition-colors cursor-pointer flex flex-col items-center justify-center min-h-[200px] border-2 border-dashed border-border">
+                <p className="font-mono text-xs text-muted-foreground">Tüm ilanları gör</p>
+                <ArrowRight size={16} className="text-muted-foreground mt-2" />
+              </div>
             </Link>
           </div>
-        )}
-      </Card>
+        </div>
+      )}
+
+      {/* ── SÖZLEŞMELERİM ── */}
+      {activeTab === "Sözleşmelerim" && (
+        <div className="border border-border bg-card divide-y divide-border">
+          {loading ? (
+            <div className="py-20 flex items-center justify-center">
+              <Loader2 size={20} className="animate-spin text-[#4FC3F7]/40" />
+            </div>
+          ) : myContracts.length === 0 ? (
+            <div className="py-24 text-center">
+              <p className="font-mono text-xs text-muted-foreground mb-6">Henüz sözleşme yok.</p>
+              <Link href="/contracts/new">
+                <Button className="h-10 px-8 bg-[#4FC3F7] text-[#050810] font-bold text-sm">
+                  İlk Sözleşmeni Oluştur
+                </Button>
+              </Link>
+            </div>
+          ) : (
+            myContracts.map(c => (
+              <Link key={c.id} href={`/contracts/${c.id}`}>
+                <div className="flex items-center justify-between px-8 py-6 hover:bg-white/[0.025] transition-colors group">
+                  <div>
+                    <p className="font-medium group-hover:text-[#4FC3F7] transition-colors">{c.title}</p>
+                    <p className="font-mono text-[10px] text-muted-foreground mt-1">{c.id.slice(0, 18)}...</p>
+                  </div>
+                  <div className="flex items-center gap-8">
+                    <p className="font-mono font-bold text-[#4FC3F7]">{mistToSui(c.total_budget)} SUI</p>
+                    <span className={`font-mono text-[10px] px-2 py-1 ${getStatusColor(c.status)}`}>
+                      {getStatusLabel(c.status)}
+                    </span>
+                    <ArrowRight size={14} className="text-muted-foreground group-hover:text-[#4FC3F7] group-hover:translate-x-1 transition-all" />
+                  </div>
+                </div>
+              </Link>
+            ))
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -4,26 +4,27 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --background: #0f0f13;
-  --foreground: #e8e8f0;
-  --card: #1a1a24;
-  --card-foreground: #e8e8f0;
-  --popover: #1a1a24;
-  --popover-foreground: #e8e8f0;
-  --primary: #6c63ff;
-  --primary-foreground: #ffffff;
-  --secondary: #2a2a38;
-  --secondary-foreground: #a0a0b8;
-  --muted: #2a2a38;
-  --muted-foreground: #6b6b85;
-  --accent: #1e1b4b;
-  --accent-foreground: #6c63ff;
-  --destructive: #ff4d6d;
-  --destructive-foreground: #ffffff;
-  --border: #2a2a38;
-  --input: #2a2a38;
-  --ring: #6c63ff;
-  --radius: 0.75rem;
+  /* === Sui × Walrus Design Tokens === */
+  --background: #050810;
+  --foreground: #F0F6FF;
+  --card: #0d1117;
+  --card-foreground: #F0F6FF;
+  --popover: #0d1117;
+  --popover-foreground: #F0F6FF;
+  --primary: #4FC3F7;
+  --primary-foreground: #050810;
+  --secondary: #111827;
+  --secondary-foreground: rgba(240, 246, 255, 0.6);
+  --muted: #111827;
+  --muted-foreground: rgba(240, 246, 255, 0.4);
+  --accent: rgba(79, 195, 247, 0.08);
+  --accent-foreground: #4FC3F7;
+  --destructive: #F87171;
+  --destructive-foreground: #050810;
+  --border: rgba(255, 255, 255, 0.07);
+  --input: #111827;
+  --ring: #4FC3F7;
+  --radius: 0px;  /* Keskin köşeler — Sui×Walrus identity */
 }
 
 @theme inline {
@@ -44,9 +45,9 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
+  --radius-sm: 0px;
+  --radius-md: 0px;
+  --radius-lg: 0px;
 }
 
 * {
@@ -61,10 +62,57 @@ html, body {
 }
 
 body {
-  font-family: var(--font-geist-sans), sans-serif;
+  font-family: 'Inter', 'Geist Sans', sans-serif;
   -webkit-font-smoothing: antialiased;
+  position: relative;
 }
 
-::-webkit-scrollbar { width: 6px; }
+/* === Sui Grid Background Pattern === */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 60px 60px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* === Radial Glow (Hero Background Effect) === */
+body::after {
+  content: '';
+  position: fixed;
+  top: -30vh;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 80vw;
+  height: 60vh;
+  background: radial-gradient(ellipse at center, rgba(79, 195, 247, 0.07) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* All content above the grid */
+#__next, main, aside, nav, header, footer, section {
+  position: relative;
+  z-index: 1;
+}
+
+/* === Mono Font Utility (uses Next.js font variable) === */
+.font-mono {
+  font-family: var(--font-jetbrains-mono), var(--font-geist-mono), 'Courier New', monospace !important;
+}
+
+/* === Scrollbar === */
+::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-track { background: var(--background); }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb { background: rgba(79, 195, 247, 0.2); }
+::-webkit-scrollbar-thumb:hover { background: rgba(79, 195, 247, 0.4); }
+
+/* === Selection === */
+::selection {
+  background: rgba(79, 195, 247, 0.2);
+  color: #4FC3F7;
+}

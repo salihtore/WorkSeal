@@ -2,14 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard, FileText, Shield, AlertTriangle,
-  Receipt, User, LogOut, Briefcase, Gavel, Loader2
-} from "lucide-react";
+import { LayoutDashboard, FileText, Shield, AlertTriangle, Receipt, User, Gavel, Loader2, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useDisconnectWallet } from "@mysten/dapp-kit";
-import { useEffect, useMemo } from "react";
-import { useCurrentAccount } from "@mysten/dapp-kit";
+import { useDisconnectWallet, useCurrentAccount } from "@mysten/dapp-kit";
+import { useMemo } from "react";
 import { useContracts } from "@/hooks/useContracts";
 
 export default function Sidebar() {
@@ -24,10 +20,8 @@ export default function Sidebar() {
     window.location.href = "/";
   };
 
-  // Menü öğelerini role göre belirle
   const navItems = useMemo(() => {
-    // Yüklenirken veya hesap yokken boş veya temel menü gösterilebilir
-    if (loading && !isArbitrator) return []; 
+    if (loading && !isArbitrator) return [];
 
     if (isArbitrator) {
       return [
@@ -38,6 +32,7 @@ export default function Sidebar() {
 
     return [
       { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+      { href: "/explore", label: "Keşfet", icon: Search },
       { href: "/contracts", label: "Sözleşmeler", icon: FileText },
       { href: "/escrow", label: "Ödemeler", icon: Shield },
       { href: "/disputes", label: "Anlaşmazlıklar", icon: AlertTriangle },
@@ -47,18 +42,19 @@ export default function Sidebar() {
   }, [isArbitrator, loading]);
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 flex flex-col border-r border-border bg-card z-40">
-      <div className="flex items-center gap-3 px-6 py-5 border-b border-border">
-        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-          <Briefcase size={16} className="text-primary-foreground" />
-        </div>
-        <span className="font-semibold text-lg tracking-tight text-foreground">WorkSeal</span>
+    <aside className="fixed left-0 top-0 h-screen w-60 flex flex-col border-r border-border bg-card z-40">
+      {/* Logo */}
+      <div className="px-6 py-5 border-b border-border">
+        <span className="font-black text-base tracking-tight">
+          Work<span className="text-[#4FC3F7]">Seal</span>
+        </span>
       </div>
 
-      <nav className="flex-1 px-3 py-4 space-y-1">
+      {/* Nav */}
+      <nav className="flex-1 py-6 px-3 space-y-0.5">
         {loading && navItems.length === 0 ? (
           <div className="flex items-center justify-center py-10">
-            <Loader2 size={20} className="animate-spin text-muted-foreground/50" />
+            <Loader2 size={16} className="animate-spin text-muted-foreground/40" />
           </div>
         ) : (
           navItems.map(({ href, label, icon: Icon }) => {
@@ -68,13 +64,17 @@ export default function Sidebar() {
                 key={href}
                 href={href}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all",
+                  "flex items-center gap-3 px-3 py-2.5 text-sm transition-all relative",
                   active
-                    ? "bg-accent text-accent-foreground"
-                    : "text-muted-foreground hover:bg-secondary hover:text-foreground"
+                    ? "text-[#4FC3F7] font-medium"
+                    : "text-muted-foreground hover:text-foreground"
                 )}
               >
-                <Icon size={18} />
+                {/* Active indicator */}
+                {active && (
+                  <span className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 bg-[#4FC3F7]" />
+                )}
+                <Icon size={16} strokeWidth={active ? 2 : 1.5} />
                 {label}
               </Link>
             );
@@ -82,25 +82,23 @@ export default function Sidebar() {
         )}
       </nav>
 
-      {/* <div className="px-3 py-4 border-t border-border">
-        <div className="flex items-center gap-3 px-3 py-2 rounded-lg bg-secondary">
-          <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
-            {account ? account.address.slice(2, 4).toUpperCase() : "??"}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground font-mono truncate">
-              {account ? `${account.address.slice(0, 6)}...${account.address.slice(-4)}` : "Bağlı değil"}
+      {/* Wallet Info */}
+      {account && (
+        <div className="px-3 py-4 border-t border-border">
+          <div className="px-3 py-3 bg-background border border-border">
+            <p className="font-mono text-[10px] text-[#4FC3F7]/60 mb-1">BAĞLI CÜZDAN</p>
+            <p className="font-mono text-xs text-muted-foreground truncate">
+              {account.address.slice(0, 8)}...{account.address.slice(-6)}
             </p>
-            <p className="text-xs text-muted-foreground truncate">Sui Testnet</p>
+            <button
+              onClick={handleLogout}
+              className="mt-2 text-[10px] text-muted-foreground hover:text-destructive transition-colors font-mono"
+            >
+              Bağlantıyı Kes
+            </button>
           </div>
-          <button
-            onClick={handleLogout}
-            className="text-muted-foreground hover:text-destructive transition-colors"
-          >
-            <LogOut size={16} />
-          </button>
         </div>
-      </div> */}
+      )}
     </aside>
   );
 }

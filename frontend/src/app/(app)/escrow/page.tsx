@@ -1,15 +1,13 @@
 "use client";
 
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Shield, ArrowDownLeft, ArrowUpRight, Plus, ExternalLink, Activity, Coins } from "lucide-react";
+import { Shield, ArrowDownLeft, ArrowUpRight, Plus, ExternalLink, Activity, Coins, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useEffect } from "react";
 import { useContracts } from "@/hooks/useContracts";
 import { mistToSui, formatTimestamp } from "@/types";
 import { useCurrentAccount } from "@mysten/dapp-kit";
-import { Loader2 } from "lucide-react";
 
 export default function EscrowPage() {
   const account = useCurrentAccount();
@@ -21,7 +19,6 @@ export default function EscrowPage() {
 
   const address = account?.address;
 
-  // Hesaplamalar
   let totalLocked = BigInt(0);
   let totalReceived = BigInt(0);
   let totalSent = BigInt(0);
@@ -33,7 +30,6 @@ export default function EscrowPage() {
       const isClient = contract.client === address;
       const isFreelancer = contract.freelancer === address;
 
-      // Sadece aktif ve kilitli olanları veya ödenenleri hesapla
       contract.milestones.forEach((m, i) => {
         if (m.is_paid) {
           if (isClient) totalSent += m.amount;
@@ -44,11 +40,11 @@ export default function EscrowPage() {
             contractId: contract.id,
             counterparty: isClient ? contract.freelancer : contract.client,
             amount: mistToSui(m.amount),
-            date: formatTimestamp(contract.created_at), // Ödeme tarihi normalde eventten gelir, şimdilik kontrat tarihi
+            date: formatTimestamp(contract.created_at), 
             type: isClient ? "sent" : "received",
             status: "released"
           });
-        } else if (contract.status === 1) { // Aktif kontratsa kilitlidir
+        } else if (contract.status === 1) { 
           totalLocked += m.amount;
           
           transactions.push({
@@ -68,132 +64,131 @@ export default function EscrowPage() {
   const hasTransactions = transactions.length > 0;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-8">
-
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="w-full">
+      {/* ── Page Header ── */}
+      <div className="border-b border-border px-10 pt-10 pb-10 flex items-end justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Escrow & Ödemeler</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Gelen, kilitlenen ve serbest bırakılan finansal varlıklarınızın güncel durumu.
+          <p className="font-mono text-[10px] text-muted-foreground tracking-widest uppercase mb-3">
+            FİNANSAL DURUM
           </p>
+          <h1 className="text-5xl font-black tracking-tight leading-none">
+            Ödemeler <span className="text-[#4FC3F7]">& Escrow</span>
+          </h1>
         </div>
         <Link href="/contracts/new">
-          <Button className="bg-primary hover:bg-primary/90 text-white gap-2 shadow-[0_0_15px_rgba(var(--primary),0.3)] transition-all">
-            <Plus size={16} /> Yeni Sözleşme
+          <Button className="h-10 px-8 bg-[#4FC3F7] text-[#050810] font-bold text-sm hover:bg-[#4FC3F7]/90">
+            Yeni Sözleşme
           </Button>
         </Link>
       </div>
 
-      {/* Özet Kartlar */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card className="p-6 bg-gradient-to-br from-card to-card/50 border-blue-500/20 relative overflow-hidden group hover:border-blue-500/40 transition-all">
-          <div className="absolute inset-0 bg-blue-500/5 blur-3xl opacity-50 group-hover:opacity-100 transition-opacity"></div>
-          <div className="flex items-center gap-3 mb-4 relative z-10">
-            <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center">
-              <Shield size={20} className="text-blue-500" />
+      <div className="px-10 py-8">
+        {/* ── Özet Kartlar ── */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-px bg-border mb-10">
+          <div className="bg-card p-8 group hover:bg-white/[0.02] transition-colors">
+            <div className="flex items-center gap-2 mb-4">
+              <Shield size={16} className="text-[#4FC3F7]" />
+              <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">Kilitli Tutar</p>
             </div>
-            <span className="text-sm font-medium text-muted-foreground">Kilitli Tutar (Escrow)</span>
+            <p className="text-4xl font-black font-mono text-[#4FC3F7]">
+              {mistToSui(totalLocked)} <span className="text-xl text-[#4FC3F7]/50">SUI</span>
+            </p>
           </div>
-          <p className="text-3xl font-mono font-bold text-foreground relative z-10">{mistToSui(totalLocked)} <span className="text-lg text-muted-foreground font-sans">SUI</span></p>
-        </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-card to-card/50 border-green-500/20 relative overflow-hidden group hover:border-green-500/40 transition-all">
-          <div className="absolute inset-0 bg-green-500/5 blur-3xl opacity-50 group-hover:opacity-100 transition-opacity"></div>
-          <div className="flex items-center gap-3 mb-4 relative z-10">
-            <div className="w-10 h-10 rounded-xl bg-green-500/10 flex items-center justify-center">
-              <ArrowDownLeft size={20} className="text-green-500" />
+          <div className="bg-card p-8 group hover:bg-white/[0.02] transition-colors">
+            <div className="flex items-center gap-2 mb-4">
+              <ArrowDownLeft size={16} className="text-emerald-400" />
+              <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">Serbest Bırakılan (Gelen)</p>
             </div>
-            <span className="text-sm font-medium text-muted-foreground">Serbest Bırakılan (Gelen)</span>
+            <p className="text-4xl font-black font-mono text-foreground">
+              {mistToSui(totalReceived)} <span className="text-xl text-muted-foreground">SUI</span>
+            </p>
           </div>
-          <p className="text-3xl font-mono font-bold text-foreground relative z-10">{mistToSui(totalReceived)} <span className="text-lg text-muted-foreground font-sans">SUI</span></p>
-        </Card>
 
-        <Card className="p-6 bg-gradient-to-br from-card to-card/50 border-border/50 relative overflow-hidden group hover:border-foreground/20 transition-all">
-          <div className="absolute inset-0 bg-secondary/20 blur-3xl opacity-50 group-hover:opacity-100 transition-opacity"></div>
-          <div className="flex items-center gap-3 mb-4 relative z-10">
-            <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
-              <ArrowUpRight size={20} className="text-muted-foreground" />
+          <div className="bg-card p-8 group hover:bg-white/[0.02] transition-colors">
+            <div className="flex items-center gap-2 mb-4">
+              <ArrowUpRight size={16} className="text-muted-foreground" />
+              <p className="font-mono text-[10px] text-muted-foreground uppercase tracking-widest">Gönderilen</p>
             </div>
-            <span className="text-sm font-medium text-muted-foreground">Gönderilen (Müşteriysen)</span>
+            <p className="text-4xl font-black font-mono text-muted-foreground">
+              {mistToSui(totalSent)} <span className="text-xl text-muted-foreground/50">SUI</span>
+            </p>
           </div>
-          <p className="text-3xl font-mono font-bold text-foreground relative z-10">{mistToSui(totalSent)} <span className="text-lg text-muted-foreground font-sans">SUI</span></p>
-        </Card>
-      </div>
+        </div>
 
-      {/* Escrow İşlemleri Tablosu */}
-      {loading ? (
-        <Card className="p-16 bg-card border-border/50 flex flex-col items-center justify-center text-center">
-          <Loader2 className="animate-spin text-primary mb-4" size={40} />
-          <p className="text-sm text-muted-foreground">İşlemleriniz yükleniyor...</p>
-        </Card>
-      ) : hasTransactions ? (
-        <Card className="bg-card border-border/50 overflow-hidden">
-          <div className="p-6 border-b border-border/50 flex items-center justify-between">
-            <h2 className="text-lg font-semibold flex items-center gap-2">
-              <Activity size={18} className="text-primary" />
-              Son İşlemler
-            </h2>
-            <Button variant="outline" size="sm" className="h-8 border-border/50">Tümünü Gör</Button>
+        {/* ── Escrow İşlemleri Tablosu ── */}
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-40 gap-4">
+            <Loader2 className="animate-spin text-[#4FC3F7]" size={28} />
+            <p className="font-mono text-xs text-muted-foreground tracking-widest">VERİLER YÜKLENİYOR</p>
           </div>
-
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm text-left">
-              <thead className="text-xs text-muted-foreground uppercase bg-secondary/30">
-                <tr>
-                  <th className="px-6 py-4 font-medium">İşlem ID</th>
-                  <th className="px-6 py-4 font-medium">Karşı Taraf</th>
-                  <th className="px-6 py-4 font-medium">Miktar</th>
-                  <th className="px-6 py-4 font-medium">Tarih</th>
-                  <th className="px-6 py-4 font-medium">Durum</th>
-                  <th className="px-6 py-4 font-medium"></th>
-                </tr>
-              </thead>
-              <tbody>
-                {transactions.map((tx) => (
-                  <tr key={tx.id} className="border-b border-border/30 hover:bg-secondary/20 transition-colors">
-                    <td className="px-6 py-4 font-mono font-medium">{tx.id}</td>
-                    <td className="px-6 py-4 font-mono text-muted-foreground">{tx.counterparty ? `${tx.counterparty.slice(0,6)}...${tx.counterparty.slice(-4)}` : "Belirsiz"}</td>
-                    <td className="px-6 py-4 font-mono font-bold flex items-center gap-2">
-                      {tx.type === "received" ? <ArrowDownLeft size={14} className="text-green-500" /> : tx.type === "released" ? <ArrowDownLeft size={14} className="text-green-500" /> : tx.type === "sent" ? <ArrowUpRight size={14} className="text-muted-foreground" /> : <Shield size={14} className="text-blue-500" />}
-                      {tx.amount} SUI
-                    </td>
-                    <td className="px-6 py-4 text-muted-foreground">{tx.date}</td>
-                    <td className="px-6 py-4">
-                      {tx.status === "locked" ? (
-                        <Badge variant="outline" className="bg-blue-500/10 text-blue-500 border-blue-500/20 gap-1.5 py-1">
-                          <Shield size={12} /> Kilitli
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="bg-green-500/10 text-green-500 border-green-500/20 gap-1.5 py-1">
-                          <Coins size={12} /> Serbest Bırakıldı
-                        </Badge>
-                      )}
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <Link href={`/contracts/${tx.contractId}`}>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-secondary">
-                          <ExternalLink size={16} />
-                        </Button>
-                      </Link>
-                    </td>
+        ) : hasTransactions ? (
+          <div className="border border-border bg-card">
+            <div className="p-6 border-b border-border flex items-center justify-between">
+              <h2 className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+                Son İşlemler
+              </h2>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm text-left font-mono">
+                <thead className="text-[10px] text-muted-foreground uppercase bg-white/[0.02] border-b border-border">
+                  <tr>
+                    <th className="px-6 py-4 font-medium">İşlem ID</th>
+                    <th className="px-6 py-4 font-medium">Karşı Taraf</th>
+                    <th className="px-6 py-4 font-medium text-right">Miktar</th>
+                    <th className="px-6 py-4 font-medium">Tarih</th>
+                    <th className="px-6 py-4 font-medium">Durum</th>
+                    <th className="px-6 py-4 font-medium"></th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-border">
+                  {transactions.map((tx) => (
+                    <tr key={tx.id} className="hover:bg-white/[0.02] transition-colors group">
+                      <td className="px-6 py-4 text-xs">{tx.id}</td>
+                      <td className="px-6 py-4 text-xs text-muted-foreground">
+                        {tx.counterparty ? `${tx.counterparty.slice(0,6)}...${tx.counterparty.slice(-4)}` : "Belirsiz"}
+                      </td>
+                      <td className="px-6 py-4 font-bold flex justify-end items-center gap-2">
+                        {tx.type === "received" ? <ArrowDownLeft size={14} className="text-emerald-400" /> : 
+                         tx.type === "released" ? <ArrowDownLeft size={14} className="text-emerald-400" /> : 
+                         tx.type === "sent" ? <ArrowUpRight size={14} className="text-muted-foreground" /> : 
+                         <Shield size={14} className="text-[#4FC3F7]" />}
+                        <span className={tx.type === "locked" ? "text-[#4FC3F7]" : "text-foreground"}>
+                          {tx.amount} SUI
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-xs text-muted-foreground">{tx.date}</td>
+                      <td className="px-6 py-4">
+                        {tx.status === "locked" ? (
+                          <span className="text-[10px] px-2 py-1 bg-[#4FC3F7]/10 text-[#4FC3F7] border border-[#4FC3F7]/20 uppercase tracking-wider">
+                            Kilitli
+                          </span>
+                        ) : (
+                          <span className="text-[10px] px-2 py-1 bg-emerald-400/10 text-emerald-400 border border-emerald-400/20 uppercase tracking-wider">
+                            Serbest
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <Link href={`/contracts/${tx.contractId}`}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-[#4FC3F7] hover:bg-transparent transition-colors">
+                            <ExternalLink size={16} />
+                          </Button>
+                        </Link>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </Card>
-      ) : (
-        <Card className="p-16 bg-card border-border/50 flex flex-col items-center justify-center text-center">
-          <div className="w-16 h-16 rounded-2xl bg-secondary flex items-center justify-center mb-6">
-            <Coins size={30} className="text-muted-foreground" />
+        ) : (
+          <div className="flex flex-col items-center justify-center py-40 text-center border border-border bg-card">
+            <span className="text-8xl font-black text-border mb-6">·</span>
+            <p className="text-muted-foreground text-sm font-mono mb-8">Henüz ödeme işleminiz yok.</p>
           </div>
-          <h3 className="text-xl font-semibold text-foreground mb-2">Henüz ödeme işleminiz yok</h3>
-          <p className="text-sm text-muted-foreground mb-8 max-w-sm leading-relaxed">
-            Sisteme kilitlenmiş veya serbest bırakılmış herhangi bir SUI varlığınız bulunmuyor.
-          </p>
-        </Card>
-      )}
-
+        )}
+      </div>
     </div>
   );
 }
