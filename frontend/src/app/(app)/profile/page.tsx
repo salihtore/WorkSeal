@@ -80,11 +80,11 @@ export default function ProfilePage() {
         </Button>
       </div>
 
-      <div className="px-10 py-8 grid grid-cols-1 md:grid-cols-3 gap-px bg-border">
-        
+      <div className="px-10 py-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+
         {/* Sol Kolon - Kimlik ve Cüzdan */}
-        <div className="md:col-span-1 space-y-px">
-          <div className="bg-card p-8 flex flex-col items-center text-center">
+        <div className="md:col-span-1 flex flex-col gap-6">
+          <div className="bg-card p-8 flex flex-col items-center text-center border border-border">
             <div className="relative mb-6">
               <div className="w-24 h-24 bg-white/[0.05] border border-border flex items-center justify-center text-foreground text-3xl font-bold font-mono">
                 {isAnonymous ? "?" : form.name ? form.name[0].toUpperCase() : <User size={32} className="text-muted-foreground" />}
@@ -117,9 +117,9 @@ export default function ProfilePage() {
                   {isAnonymous ? "Anonim Kullanıcı" : form.name || "İsim Eklenmedi"}
                 </h2>
                 {!isAnonymous && form.title && (
-                   <span className="font-mono text-[10px] px-2 py-1 bg-white/[0.05] text-muted-foreground border border-border uppercase tracking-wider">
-                     {form.title}
-                   </span>
+                  <span className="font-mono text-[10px] px-2 py-1 bg-white/[0.05] text-muted-foreground border border-border uppercase tracking-wider">
+                    {form.title}
+                  </span>
                 )}
                 {isAnonymous && (
                   <span className="font-mono text-[10px] px-2 py-1 bg-background text-muted-foreground border border-border uppercase tracking-wider">
@@ -165,30 +165,31 @@ export default function ProfilePage() {
             </div>
           </div>
 
-          <div className="bg-card p-6 flex flex-col justify-between">
-             <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
-                   <div className={`w-8 h-8 flex items-center justify-center border ${isAnonymous ? 'bg-background border-border text-muted-foreground' : 'bg-[#4FC3F7]/10 border-[#4FC3F7]/20 text-[#4FC3F7]'}`}>
-                      {isAnonymous ? <EyeOff size={14} /> : <Eye size={14} />}
-                   </div>
-                   <p className="text-xs font-bold font-mono uppercase tracking-widest">{isAnonymous ? "Anonim Mod" : "Görünür Profil"}</p>
+          <div className="bg-card p-6 flex flex-col justify-between border border-border">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className={`w-8 h-8 flex items-center justify-center border ${isAnonymous ? 'bg-background border-border text-muted-foreground' : 'bg-[#4FC3F7]/10 border-[#4FC3F7]/20 text-[#4FC3F7]'}`}>
+                  {isAnonymous ? <EyeOff size={14} /> : <Eye size={14} />}
                 </div>
-                <button
-                  onClick={() => setIsAnonymous(!isAnonymous)}
-                  className={`w-10 h-5 relative border ${isAnonymous ? "bg-background border-border" : "bg-[#4FC3F7] border-[#4FC3F7]"}`}
-                >
-                  <div className={`w-3 h-3 bg-white absolute top-[3px] transition-all ${isAnonymous ? "left-1 bg-muted-foreground" : "left-[22px] bg-[#050810]"}`} />
-                </button>
-             </div>
-             <p className="text-[10px] font-mono text-muted-foreground leading-relaxed">
-               {isAnonymous ? "> Cüzdan adresi harici tüm bilgiler gizlenir." : "> Profil detayların platformda herkese açık olarak yayınlanır."}
-             </p>
+                <p className="text-xs font-bold font-mono uppercase tracking-widest">{isAnonymous ? "Anonim Mod" : "Görünür Profil"}</p>
+              </div>
+              <button
+                onClick={() => setIsAnonymous(!isAnonymous)}
+                className={`w-10 h-5 relative border ${isAnonymous ? "bg-background border-border" : "bg-[#4FC3F7] border-[#4FC3F7]"}`}
+              >
+                <div className={`w-3 h-3 bg-white absolute top-[3px] transition-all ${isAnonymous ? "left-1 bg-muted-foreground" : "left-[22px] bg-[#050810]"}`} />
+              </button>
+            </div>
+            <p className="text-[10px] font-mono text-muted-foreground leading-relaxed">
+              {isAnonymous ? "> Cüzdan adresi harici tüm bilgiler gizlenir." : "> Profil detayların platformda herkese açık olarak yayınlanır."}
+            </p>
           </div>
         </div>
 
         {/* Sağ Kolon - Bio, Yetenekler ve Portföy */}
-        <div className="md:col-span-2 space-y-px">
-          <div className="bg-card p-8">
+        <div className="md:col-span-2 flex flex-col gap-6">
+          
+          <div className="bg-card p-8 border border-border">
             <h2 className="text-xs font-mono font-bold mb-6 text-foreground flex items-center gap-2 uppercase tracking-widest">
               <User size={14} className="text-[#4FC3F7]" /> Hakkımda
             </h2>
@@ -206,44 +207,44 @@ export default function ProfilePage() {
             )}
           </div>
 
-          <div className="bg-card p-8">
-             <h2 className="text-xs font-mono font-bold mb-6 text-foreground flex items-center gap-2 uppercase tracking-widest">
-               <Hexagon size={14} className="text-[#4FC3F7]" /> Yetenekler
-             </h2>
-             
-             <div className="flex flex-wrap gap-2">
-               {skills.length > 0 ? skills.map((s) => (
-                 <div key={s} className="px-3 py-1.5 text-xs font-mono bg-background border border-border flex items-center gap-2">
-                   {s}
-                   {editing && (
-                     <button onClick={() => removeSkill(s)} className="text-muted-foreground hover:text-destructive transition-colors ml-1">
-                       <X size={12} />
-                     </button>
-                   )}
-                 </div>
-               )) : (
-                 <p className="text-xs font-mono text-muted-foreground">Henüz yetenek eklenmedi.</p>
-               )}
-             </div>
+          <div className="bg-card p-8 border border-border">
+            <h2 className="text-xs font-mono font-bold mb-6 text-foreground flex items-center gap-2 uppercase tracking-widest">
+              <Hexagon size={14} className="text-[#4FC3F7]" /> Yetenekler
+            </h2>
 
-             {editing && (
-               <div className="flex gap-2 mt-6 pt-6 border-t border-border">
-                 <Input
-                   placeholder="Yeni yetenek (Örn: Move)"
-                   value={newSkill}
-                   onChange={(e) => setNewSkill(e.target.value)}
-                   onKeyDown={(e) => e.key === "Enter" && addSkill()}
-                   className="bg-background border-border text-sm w-64 h-10 font-mono focus-visible:ring-0 focus-visible:border-[#4FC3F7]/50"
-                 />
-                 <Button onClick={addSkill} className="gap-2 bg-white/[0.05] border border-border text-foreground hover:bg-white/[0.1] rounded-none">
-                   <Plus size={14} /> Ekle
-                 </Button>
-               </div>
-             )}
+            <div className="flex flex-wrap gap-2">
+              {skills.length > 0 ? skills.map((s) => (
+                <div key={s} className="px-3 py-1.5 text-xs font-mono bg-background border border-border flex items-center gap-2">
+                  {s}
+                  {editing && (
+                    <button onClick={() => removeSkill(s)} className="text-muted-foreground hover:text-destructive transition-colors ml-1">
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+              )) : (
+                <p className="text-xs font-mono text-muted-foreground">Henüz yetenek eklenmedi.</p>
+              )}
+            </div>
+
+            {editing && (
+              <div className="flex gap-2 mt-6 pt-6 border-t border-border">
+                <Input
+                  placeholder="Yeni yetenek (Örn: Move)"
+                  value={newSkill}
+                  onChange={(e) => setNewSkill(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && addSkill()}
+                  className="bg-background border-border text-sm w-64 h-10 font-mono focus-visible:ring-0 focus-visible:border-[#4FC3F7]/50"
+                />
+                <Button onClick={addSkill} className="gap-2 bg-white/[0.05] border border-border text-foreground hover:bg-white/[0.1] rounded-none">
+                  <Plus size={14} /> Ekle
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* On-Chain Başarımlar */}
-          <div className="bg-card p-8">
+          <div className="bg-card p-8 border border-border">
             <h2 className="text-xs font-mono font-bold mb-6 text-foreground flex items-center gap-2 uppercase tracking-widest">
               <Trophy size={14} className="text-[#4FC3F7]" /> On-Chain Başarımlar
             </h2>
@@ -251,7 +252,7 @@ export default function ProfilePage() {
               {successfulJobs > 0 ? (
                 <>
                   <div className="w-16 h-16 bg-[#4FC3F7]/10 flex items-center justify-center mb-4 border border-[#4FC3F7]/20">
-                     <Trophy size={24} className="text-[#4FC3F7]" />
+                    <Trophy size={24} className="text-[#4FC3F7]" />
                   </div>
                   <h3 className="text-sm font-bold text-foreground font-mono uppercase tracking-widest mb-2">Güvenilir Freelancer</h3>
                   <p className="text-xs font-mono text-muted-foreground max-w-sm">
@@ -270,10 +271,10 @@ export default function ProfilePage() {
               )}
             </div>
           </div>
-          
+
           {/* Admin Bölümü */}
           {isArbitrator && (
-            <div className="bg-card p-8 border-l-2 border-l-[#4FC3F7]">
+            <div className="bg-card p-8 border border-border border-l-2 border-l-[#4FC3F7]">
               <h2 className="text-xs font-mono font-bold mb-4 text-[#4FC3F7] flex items-center gap-2 uppercase tracking-widest">
                 <Shield size={14} /> Admin: Hakem Kaydı
               </h2>
@@ -287,8 +288,8 @@ export default function ProfilePage() {
                   onChange={(e) => setArbitratorAddress(e.target.value)}
                   className="bg-background border-border text-sm flex-1 font-mono focus-visible:ring-0 focus-visible:border-[#4FC3F7]/50 rounded-none h-10"
                 />
-                <Button 
-                  onClick={handleRegisterArbitrator} 
+                <Button
+                  onClick={handleRegisterArbitrator}
                   disabled={isRegistering || !arbitratorAddress}
                   className="gap-2 bg-[#4FC3F7] text-[#050810] rounded-none hover:bg-[#4FC3F7]/90 h-10 px-8"
                 >

@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "name": "WorkSeal",
+    "slug": "workseal",
+    "scheme": "workseal",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTabletMode": true,
+      "bundleIdentifier": "com.workseal.mobile"
+    },
+    "android": {
+      "package": "com.workseal.mobile"
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-secure-store"
+    ]
+  }
+}
