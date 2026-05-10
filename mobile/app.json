@@ -6,21 +6,41 @@
     "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "jsEngine": "jsc",
+    "splash": {
+      "backgroundColor": "#0f0f13",
+      "resizeMode": "contain"
+    },
     "ios": {
-      "supportsTabletMode": true,
+      "supportsTablet": true,
       "bundleIdentifier": "com.workseal.mobile"
     },
     "android": {
-      "package": "com.workseal.mobile"
+      "package": "com.workseal.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#0f0f13"
+      },
+      "intentFilters": [
+        {
+          "action": "android.intent.action.VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "workseal"
+            }
+          ]
+        }
+      ]
     },
     "web": {
       "bundler": "metro"
     },
     "plugins": [
+      "expo-router",
       "expo-secure-store"
-    ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
   }
 }

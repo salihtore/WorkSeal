@@ -1,176 +1,236 @@
-import React, { useState } from 'react';
-import { View, StyleSheet, TextInput, TouchableOpacity, ScrollView, Alert } from 'react-native';
-import { Stack, useRouter } from 'expo-router';
-import { ThemedView } from '@/components/themed-view';
-import { ThemedText } from '@/components/themed-text';
-import { useWalletStore } from '@/hooks/use-wallet-store';
-import { SuiTx } from '@/lib/sui-tx';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+  Alert,
+  TouchableOpacity,
+} from "react-native";
+import { useState } from "react";
+import { useRouter, Stack } from "expo-router";
+import { ThemedText } from "../../components/ThemedText";
+import { Input } from "../../components/ui/Input";
+import { Button } from "../../components/ui/Button";
+import { Card } from "../../components/ui/Card";
+import { useTransaction } from "../../hooks/use-transaction";
+import { COLORS } from "../../constants/colors";
+import { Plus, Trash2, X } from "lucide-react-native";
+import { suiToMist } from "../../types";
 
 export default function NewContractScreen() {
   const router = useRouter();
-  const { isConnected } = useWalletStore();
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [budget, setBudget] = useState('');
+  const { createContract, isPending } = useTransaction();
+
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [clientAddress, setClientAddress] = useState("");
+  const [deadlineDays, setDeadlineDays] = useState("30");
+  const [milestones, setMilestones] = useState([{ title: "", amount: "" }]);
+
+  const addMilestone = () => {
+    setMilestones([...milestones, { title: "", amount: "" }]);
+  };
+
+  const removeMilestone = (index: number) => {
+    if (milestones.length > 1) {
+      const newMilestones = [...milestones];
+      newMilestones.splice(index, 1);
+      setMilestones(newMilestones);
+    }
+  };
+
+  const updateMilestone = (index: number, field: "title" | "amount", value: string) => {
+    const newMilestones = [...milestones];
+    newMilestones[index][field] = value;
+    setMilestones(newMilestones);
+  };
+
+  const totalBudget = milestones.reduce(
+    (sum, m) => sum + (parseFloat(m.amount) || 0),
+    0
+  );
 
   const handleCreate = async () => {
-    if (!isConnected || !useWalletStore.getState().address) {
-      Alert.alert('Wallet Required', 'Please connect your wallet on the Dashboard first.');
+    if (!title || !clientAddress || milestones.some(m => !m.title || !m.amount)) {
+      Alert.alert("Hata", "Lütfen tüm alanları doldurun.");
       return;
     }
-    if (!title || !budget) {
-      Alert.alert('Missing Info', 'Please provide at least a title and a budget.');
+
+    if (!clientAddress.startsWith("0x")) {
+      Alert.alert("Hata", "Geçerli bir müşteri adresi girin (0x...).");
       return;
     }
 
     try {
-      const clientAddr = useWalletStore.getState().address!;
-      const deadline = Date.now() + (30 * 24 * 60 * 60 * 1000); // 30 days default
-      const mistAmount = (Number(budget) * 1_000_000_000).toString();
-
-      const tx = SuiTx.createContract(
+      const deadlineMs = Date.now() + parseInt(deadlineDays) * 24 * 60 * 60 * 1000;
+      
+      await createContract({
         title,
         description,
-        clientAddr,
-        deadline,
-        ['Initial Milestone'], // Default for simple mobile UI
-        [mistAmount]
-      );
+        client: clientAddress,
+        deadline_ms: deadlineMs,
+        milestone_titles: milestones.map(m => m.title),
+        milestone_amounts: milestones.map(m => suiToMist(parseFloat(m.amount))),
+      });
 
-      const result = await useWalletStore.getState().executeTransaction(tx);
-      
-      if (result?.digest) {
-        Alert.alert('Success', 'Contract deployed to blockchain!', [
-          { text: 'OK', onPress: () => router.back() }
-        ]);
-      }
-    } catch (error: any) {
-      Alert.alert('Error', error.message);
+      Alert.alert("Başarılı", "Sözleşme oluşturuldu!", [
+        { text: "Tamam", onPress: () => router.replace("/(tabs)/contracts") }
+      ]);
+    } catch (err: any) {
+      // Error handled in hook
     }
   };
 
   return (
-    <ThemedView style={styles.container}>
-      <Stack.Screen options={{ 
-        headerTitle: 'POST A JOB',
-        headerShown: true,
-        headerStyle: { backgroundColor: '#050810' },
-        headerTintColor: '#4FC3F7',
-        headerTitleStyle: { fontFamily: 'monospace', fontSize: 14, letterSpacing: 1 },
-      }} />
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      style={styles.container}
+    >
+      <Stack.Screen 
+        options={{
+          headerLeft: () => (
+            <TouchableOpacity onPress={() => router.back()}>
+              <X color={COLORS.foreground} size={24} />
+            </TouchableOpacity>
+          ),
+          headerRight: () => (
+            <Button 
+              label="OLUŞTUR" 
+              onPress={handleCreate} 
+              size="sm" 
+              loading={isPending} 
+              disabled={isPending}
+            />
+          )
+        }} 
+      />
 
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.headerInfo}>
-          <ThemedText style={styles.infoText}>
-            Creating a job will deploy a new Escrow contract on the Sui network.
-          </ThemedText>
-        </View>
-
-        <View style={styles.formGroup}>
-          <ThemedText style={styles.label}>JOB TITLE</ThemedText>
-          <TextInput
-            style={styles.input}
-            placeholder="e.g. React Native Expert"
-            placeholderTextColor="rgba(255,255,255,0.2)"
+      <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Section title="Genel Bilgiler">
+          <Input
+            label="Sözleşme Başlığı"
+            placeholder="Örn: Mobil Uygulama Geliştirme"
             value={title}
             onChangeText={setTitle}
           />
-        </View>
-
-        <View style={styles.formGroup}>
-          <ThemedText style={styles.label}>DESCRIPTION</ThemedText>
-          <TextInput
-            style={[styles.input, styles.textArea]}
-            placeholder="Describe the job requirements..."
-            placeholderTextColor="rgba(255,255,255,0.2)"
+          <Input
+            label="Açıklama"
+            placeholder="İş kapsamını detaylandırın..."
             multiline
-            numberOfLines={4}
             value={description}
             onChangeText={setDescription}
           />
-        </View>
-
-        <View style={styles.formGroup}>
-          <ThemedText style={styles.label}>BUDGET (SUI)</ThemedText>
-          <TextInput
-            style={styles.input}
-            placeholder="0.00"
-            placeholderTextColor="rgba(255,255,255,0.2)"
-            keyboardType="numeric"
-            value={budget}
-            onChangeText={setBudget}
+          <Input
+            label="Müşteri Cüzdan Adresi"
+            placeholder="0x..."
+            autoCapitalize="none"
+            value={clientAddress}
+            onChangeText={setClientAddress}
           />
-        </View>
+          <Input
+            label="Süre (Gün)"
+            placeholder="30"
+            keyboardType="numeric"
+            value={deadlineDays}
+            onChangeText={setDeadlineDays}
+          />
+        </Section>
 
-        <TouchableOpacity style={styles.submitBtn} onPress={handleCreate}>
-          <ThemedText style={styles.submitBtnText}>DEPLOY TO BLOCKCHAIN</ThemedText>
-        </TouchableOpacity>
+        <Section title="Milestone'lar (Ödeme Planı)">
+          {milestones.map((m, i) => (
+            <Card key={i} style={styles.milestoneCard} padding={12}>
+              <View style={styles.milestoneHeader}>
+                <ThemedText style={styles.milestoneLabel}>Milestone #{i + 1}</ThemedText>
+                {milestones.length > 1 && (
+                  <TouchableOpacity onPress={() => removeMilestone(i)}>
+                    <Trash2 size={18} color={COLORS.destructive} />
+                  </TouchableOpacity>
+                )}
+              </View>
+              <Input
+                placeholder="Başlık (Örn: Tasarım Onayı)"
+                value={m.title}
+                onChangeText={(v) => updateMilestone(i, "title", v)}
+              />
+              <Input
+                placeholder="Tutar (SUI)"
+                keyboardType="numeric"
+                value={m.amount}
+                onChangeText={(v) => updateMilestone(i, "amount", v)}
+              />
+            </Card>
+          ))}
+          
+          <Button
+            label="MİLESTONE EKLE"
+            variant="outline"
+            onPress={addMilestone}
+            icon={<Plus size={18} color={COLORS.primary} />}
+            style={{ marginTop: 12 }}
+          />
+        </Section>
 
-        <ThemedText style={styles.footerNote}>
-          Funds will be locked in the escrow until you approve the work or a dispute is resolved.
-        </ThemedText>
+        <Card style={styles.totalCard} padding={20}>
+          <ThemedText variant="muted">Toplam Bütçe</ThemedText>
+          <ThemedText style={styles.totalAmount}>{totalBudget.toFixed(2)} SUI</ThemedText>
+        </Card>
+        
+        <View style={{ height: 40 }} />
       </ScrollView>
-    </ThemedView>
+    </KeyboardAvoidingView>
+  );
+}
+
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <View style={styles.section}>
+      <ThemedText style={styles.sectionTitle}>{title}</ThemedText>
+      {children}
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: COLORS.background,
   },
-  content: {
-    padding: 24,
+  scrollContent: {
+    padding: 20,
   },
-  headerInfo: {
-    backgroundColor: 'rgba(79, 195, 247, 0.05)',
-    padding: 16,
-    borderLeftWidth: 2,
-    borderLeftColor: '#4FC3F7',
+  section: {
     marginBottom: 32,
   },
-  infoText: {
-    fontSize: 13,
-    opacity: 0.7,
-    lineHeight: 20,
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: COLORS.primary,
+    marginBottom: 16,
+    textTransform: "uppercase",
   },
-  formGroup: {
-    marginBottom: 24,
+  milestoneCard: {
+    marginBottom: 12,
   },
-  label: {
-    fontFamily: 'monospace',
-    fontSize: 10,
-    letterSpacing: 1,
-    opacity: 0.5,
+  milestoneHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 8,
   },
-  input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    padding: 16,
-    color: '#fff',
-    fontSize: 15,
+  milestoneLabel: {
+    fontSize: 12,
+    fontWeight: "bold",
+    color: COLORS.muted,
   },
-  textArea: {
-    height: 120,
-    textAlignVertical: 'top',
+  totalCard: {
+    alignItems: "center",
+    backgroundColor: COLORS.primaryLight,
+    borderColor: COLORS.primary,
   },
-  submitBtn: {
-    backgroundColor: '#4FC3F7',
-    padding: 18,
-    alignItems: 'center',
-    marginTop: 16,
-  },
-  submitBtnText: {
-    color: '#050810',
-    fontWeight: 'bold',
-    letterSpacing: 1,
-  },
-  footerNote: {
-    fontSize: 11,
-    opacity: 0.4,
-    textAlign: 'center',
-    marginTop: 24,
-    lineHeight: 16,
+  totalAmount: {
+    fontSize: 32,
+    fontWeight: "800",
+    color: COLORS.primary,
   },
 });

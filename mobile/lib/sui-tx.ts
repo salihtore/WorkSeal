@@ -1,85 +1,100 @@
-/**
- * Sui Transaction Builders for WorkSeal
- * Returns structured transaction data for the mobile wallet bridge.
- */
+import { Transaction } from "@mysten/sui/transactions";
+import { PACKAGE_ID, CLOCK_OBJECT_ID } from "../constants/config";
+import { CreateContractInput } from "../types";
 
-export const WORKSEAL_PACKAGE_ID = "0x347761a22dd046d6c4b34b17a35fe388c644c8315bf5830d28bcf9429c4c4e86";
-export const WORKSEAL_MODULE = "workseal";
-export const CLOCK_OBJECT_ID = "0x6";
-export const ARBITRATOR_REGISTRY_ID = "0x9871edff64acc2ae51fe5f637a15c5051ad1921c2cfeb86efb9007ced3421dd8";
+export const buildCreateContractTx = async (
+  params: CreateContractInput & { senderAddress: string }
+) => {
+  const tx = new Transaction();
+  
+  tx.moveCall({
+    target: `${PACKAGE_ID}::workseal::create_contract`,
+    arguments: [
+      tx.pure.string(params.title),
+      tx.pure.string(params.description),
+      tx.pure.address(params.client),
+      tx.pure.u64(params.deadline_ms),
+      tx.pure.vector("string", params.milestone_titles),
+      tx.pure.vector("u64", params.milestone_amounts),
+      tx.object(CLOCK_OBJECT_ID),
+    ],
+  });
 
-export interface TransactionData {
-  target: string;
-  arguments: any[];
-  typeArguments?: string[];
-}
+  tx.setSender(params.senderAddress);
+  const bytes = await tx.build();
+  return Buffer.from(bytes).toString("base64");
+};
 
-export const SuiTx = {
-  /**
-   * Create a new contract
-   */
-  createContract: (
-    title: string,
-    description: string,
-    client: string,
-    deadline: number,
-    milestoneTitles: string[],
-    milestoneAmounts: string[]
-  ): TransactionData => ({
-    target: `${WORKSEAL_PACKAGE_ID}::${WORKSEAL_MODULE}::create_contract`,
-    arguments: [title, description, client, deadline.toString(), milestoneTitles, milestoneAmounts, CLOCK_OBJECT_ID],
-  }),
+export const buildFundContractTx = async (
+  contractId: string,
+  amount: bigint,
+  senderAddress: string
+) => {
+  const tx = new Transaction();
+  
+  const [coin] = tx.splitCoins(tx.gas, [tx.pure.u64(amount)]);
+  
+  tx.moveCall({
+    target: `${PACKAGE_ID}::workseal::fund_contract`,
+    arguments: [tx.object(contractId), coin],
+  });
 
-  /**
-   * Freelancer takes an open job
-   */
-  takeJob: (contractId: string): TransactionData => ({
-    target: `${WORKSEAL_PACKAGE_ID}::${WORKSEAL_MODULE}::take_job`,
-    arguments: [contractId],
-  }),
+  tx.setSender(senderAddress);
+  const bytes = await tx.build();
+  return Buffer.from(bytes).toString("base64");
+};
 
-  /**
-   * Client funds the contract
-   */
-  fundContract: (contractId: string, amount: string): TransactionData => ({
-    target: `${WORKSEAL_PACKAGE_ID}::${WORKSEAL_MODULE}::fund_contract`,
-    arguments: [contractId, amount], // In real PTB, 'amount' would be a splitCoin result
-  }),
+export const buildSubmitMilestoneTx = async (
+  contractId: string,
+  milestoneIndex: number,
+  senderAddress: string
+) => {
+  const tx = new Transaction();
+  
+  tx.moveCall({
+    target: `${PACKAGE_ID}::workseal::submit_milestone`,
+    arguments: [tx.object(contractId), tx.pure.u64(milestoneIndex)],
+  });
 
-  /**
-   * Freelancer submits a milestone proof
-   */
-  submitMilestone: (
-    contractId: string, 
-    index: number, 
-    link: string, 
-    notes: string
-  ): TransactionData => ({
-    target: `${WORKSEAL_PACKAGE_ID}::${WORKSEAL_MODULE}::submit_milestone`,
-    arguments: [contractId, index.toString(), link, notes],
-  }),
+  tx.setSender(senderAddress);
+  const bytes = await tx.build();
+  return Buffer.from(bytes).toString("base64");
+};
 
-  /**
-   * Client approves milestone and releases funds
-   */
-  approveAndRelease: (contractId: string, index: number): TransactionData => ({
-    target: `${WORKSEAL_PACKAGE_ID}::${WORKSEAL_MODULE}::approve_and_release_funds`,
-    arguments: [contractId, index.toString()],
-  }),
+export const buildApproveAndReleaseTx = async (
+  contractId: string,
+  milestoneIndex: number,
+  senderAddress: string
+) => {
+  const tx = new Transaction();
+  
+  tx.moveCall({
+    target: `${PACKAGE_ID}::workseal::approve_and_release_funds`,
+    arguments: [tx.object(contractId), tx.pure.u64(milestoneIndex)],
+  });
 
-  /**
-   * Raise a dispute
-   */
-  raiseDispute: (contractId: string, reason: string): TransactionData => ({
-    target: `${WORKSEAL_PACKAGE_ID}::${WORKSEAL_MODULE}::raise_dispute`,
-    arguments: [contractId, ARBITRATOR_REGISTRY_ID, reason, CLOCK_OBJECT_ID],
-  }),
+  tx.setSender(senderAddress);
+  const bytes = await tx.build();
+  return Buffer.from(bytes).toString("base64");
+};
 
-  /**
-   * Send a message
-   */
-  sendMessage: (contractId: string, content: string): TransactionData => ({
-    target: `${WORKSEAL_PACKAGE_ID}::${WORKSEAL_MODULE}::send_message`,
-    arguments: [contractId, content, CLOCK_OBJECT_ID],
-  }),
+export const buildRaiseDisputeTx = async (
+  contractId: string,
+  reason: string,
+  senderAddress: string
+) => {
+  const tx = new Transaction();
+  
+  tx.moveCall({
+    target: `${PACKAGE_ID}::workseal::raise_dispute`,
+    arguments: [
+      tx.object(contractId),
+      tx.pure.string(reason),
+      tx.object(CLOCK_OBJECT_ID),
+    ],
+  });
+
+  tx.setSender(senderAddress);
+  const bytes = await tx.build();
+  return Buffer.from(bytes).toString("base64");
 };

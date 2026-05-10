@@ -1,233 +1,179 @@
-import React from 'react';
-import {
-  View, Text, ScrollView, TouchableOpacity, StyleSheet, Linking
-} from 'react-native';
-import { useWalletStore } from '@/hooks/use-wallet-store';
-import { useContracts } from '@/hooks/use-contracts';
-import { getSuiBalance } from '@/lib/sui-client';
-import { useState, useEffect } from 'react';
-
-const NETWORK_LABELS = {
-  mainnet: 'MAINNET',
-  testnet: 'TESTNET',
-  devnet: 'DEVNET',
-} as const;
-
-const NETWORKS = ['mainnet', 'testnet', 'devnet'] as const;
+import { View, StyleSheet, ScrollView, Alert, Linking } from "react-native";
+import { useWalletStore } from "../../hooks/use-wallet-store";
+import { useWalletConnect } from "../../hooks/use-wallet-connect";
+import { ThemedText } from "../../components/ThemedText";
+import { Card } from "../../components/ui/Card";
+import { Button } from "../../components/ui/Button";
+import { COLORS } from "../../constants/colors";
+import { User, LogOut, ExternalLink, Globe, ShieldCheck } from "lucide-react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ProfileScreen() {
-  const { address, isConnected, network, setNetwork, setAddress, logout } = useWalletStore();
-  const { contracts } = useContracts();
-  const [balance, setBalance] = useState<string>('0.00');
+  const { address, network, setNetwork } = useWalletStore();
+  const { disconnect } = useWalletConnect();
 
-  useEffect(() => {
-    if (isConnected && address) {
-      getSuiBalance(address, network)
-        .then(res => {
-          const sui = Number(res.totalBalance) / 1_000_000_000;
-          setBalance(sui.toFixed(2));
-        })
-        .catch(err => console.error('Error fetching balance:', err));
-    }
-  }, [address, isConnected, network]);
-
-  const handleMockConnect = () => {
-    setAddress('0x76543210fedcba9876543210fedcba9876543210fedcba9876543210fedcba98');
+  const handleLogout = () => {
+    Alert.alert(
+      "Çıkış Yap",
+      "Cüzdan bağlantısını kesmek istediğinize emin misiniz?",
+      [
+        { text: "İptal", style: "cancel" },
+        { text: "Evet, Çıkış Yap", style: "destructive", onPress: disconnect }
+      ]
+    );
   };
 
   const openExplorer = () => {
-    if (!address) return;
-    const base = network === 'mainnet'
-      ? 'https://suiscan.xyz/mainnet/account/'
-      : `https://suiscan.xyz/${network}/account/`;
-    Linking.openURL(base + address);
+    const url = `https://suiscan.xyz/${network}/account/${address}`;
+    Linking.openURL(url);
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-
-      {/* Header */}
+    <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerLabel}>PROFILE</Text>
-        <Text style={styles.title}>Wallet{'\n'}<Text style={styles.titleDim}>Identity</Text></Text>
+        <View style={styles.avatar}>
+          <ThemedText style={styles.avatarText}>
+            {address?.slice(2, 4).toUpperCase()}
+          </ThemedText>
+        </View>
+        <ThemedText variant="title" style={styles.userName}>Anonim Kullanıcı</ThemedText>
+        <ThemedText variant="muted" style={styles.address}>{address}</ThemedText>
       </View>
 
-      {/* Wallet Card */}
-      <View style={styles.walletCard}>
-        <View style={styles.walletCardInner}>
-          <View style={styles.shieldBadge}>
-            <Text style={styles.shieldIcon}>◈</Text>
-          </View>
-          <Text style={styles.walletLabel}>SUI ADDRESS</Text>
-          {isConnected && address ? (
-            <>
-              <Text style={styles.address}>{address.slice(0, 12)}</Text>
-              <Text style={styles.address}>{address.slice(12, 26)}</Text>
-              <Text style={styles.address}>{address.slice(-10)}</Text>
-              <TouchableOpacity style={styles.explorerBtn} onPress={openExplorer}>
-                <Text style={styles.explorerBtnText}>VIEW ON SUISCAN →</Text>
-              </TouchableOpacity>
-            </>
-          ) : (
-            <>
-              <Text style={styles.notConnected}>NOT CONNECTED</Text>
-              <TouchableOpacity style={styles.connectBtn} onPress={handleMockConnect}>
-                <Text style={styles.connectBtnText}>CONNECT WALLET</Text>
-              </TouchableOpacity>
-            </>
-          )}
-        </View>
-      </View>
-
-      {/* Stats */}
-      {isConnected && (
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{contracts.length}</Text>
-            <Text style={styles.statLabel}>CONTRACTS</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>0</Text>
-            <Text style={styles.statLabel}>DISPUTES</Text>
-          </View>
-          <View style={styles.statCard}>
-            <Text style={styles.statValue}>{balance}</Text>
-            <Text style={styles.statLabel}>SUI BALANCE</Text>
-          </View>
-        </View>
-      )}
-
-      {/* Network Selector */}
       <View style={styles.section}>
-        <Text style={styles.sectionLabel}>NETWORK</Text>
-        <View style={styles.networkRow}>
-          {NETWORKS.map(n => (
-            <TouchableOpacity
-              key={n}
-              onPress={() => setNetwork(n)}
-              style={[styles.networkBtn, network === n && styles.networkBtnActive]}
-            >
-              <Text style={[styles.networkBtnText, network === n && styles.networkBtnTextActive]}>
-                {NETWORK_LABELS[n]}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        <ThemedText style={styles.sectionTitle}>Hesap Ayarları</ThemedText>
+        <Card padding={0}>
+          <ProfileItem 
+            icon={<ExternalLink size={20} color={COLORS.muted} />} 
+            label="Explorer'da Görüntüle" 
+            onPress={openExplorer} 
+          />
+          <ProfileItem 
+            icon={<ShieldCheck size={20} color={COLORS.muted} />} 
+            label="Doğrulanmış Profil" 
+            value="Bekliyor"
+            onPress={() => {}} 
+          />
+        </Card>
       </View>
 
-      {/* App Info */}
       <View style={styles.section}>
-        <Text style={styles.sectionLabel}>ABOUT</Text>
-        <View style={styles.infoCard}>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoKey}>VERSION</Text>
-            <Text style={styles.infoVal}>1.0.0</Text>
+        <ThemedText style={styles.sectionTitle}>Ağ Seçimi</ThemedText>
+        <Card padding={8}>
+          <View style={styles.networkToggle}>
+            {["mainnet", "testnet", "devnet"].map((n) => (
+              <Button
+                key={n}
+                label={n.toUpperCase()}
+                onPress={() => setNetwork(n as any)}
+                variant={network === n ? "primary" : "ghost"}
+                size="sm"
+                style={{ flex: 1 }}
+              />
+            ))}
           </View>
-          <View style={styles.infoDivider} />
-          <View style={styles.infoRow}>
-            <Text style={styles.infoKey}>NETWORK</Text>
-            <Text style={[styles.infoVal, { color: '#4FC3F7' }]}>{NETWORK_LABELS[network]}</Text>
-          </View>
-          <View style={styles.infoDivider} />
-          <View style={styles.infoRow}>
-            <Text style={styles.infoKey}>CHAIN</Text>
-            <Text style={styles.infoVal}>SUI BLOCKCHAIN</Text>
-          </View>
-        </View>
+        </Card>
       </View>
 
-      {/* Disconnect */}
-      {isConnected && (
-        <TouchableOpacity style={styles.disconnectBtn} onPress={logout}>
-          <Text style={styles.disconnectText}>DISCONNECT WALLET</Text>
-        </TouchableOpacity>
-      )}
-
+      <View style={styles.section}>
+        <Button 
+          label="ÇIKIŞ YAP" 
+          onPress={handleLogout} 
+          variant="destructive" 
+          icon={<LogOut size={20} color="#fff" />} 
+        />
+      </View>
+      
+      <View style={{ height: 40 }} />
     </ScrollView>
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#050810' },
-  content: { paddingBottom: 100 },
-  header: {
-    borderBottomWidth: 1, borderBottomColor: 'rgba(255,255,255,0.06)',
-    paddingHorizontal: 24, paddingTop: 64, paddingBottom: 24,
-  },
-  headerLabel: {
-    fontFamily: 'monospace', fontSize: 10, letterSpacing: 2,
-    color: 'rgba(79,195,247,0.7)', marginBottom: 12,
-  },
-  title: { fontSize: 40, fontWeight: '900', color: '#F0F6FF', lineHeight: 44 },
-  titleDim: { color: 'rgba(240,246,255,0.3)' },
+function ProfileItem({ icon, label, value, onPress }: { icon: any; label: string; value?: string; onPress: () => void }) {
+  return (
+    <TouchableOpacity onPress={onPress} style={styles.profileItem}>
+      <View style={styles.profileItemLeft}>
+        {icon}
+        <ThemedText style={styles.profileItemLabel}>{label}</ThemedText>
+      </View>
+      <View style={styles.profileItemRight}>
+        {value && <ThemedText variant="muted">{value}</ThemedText>}
+      </View>
+    </TouchableOpacity>
+  );
+}
 
-  walletCard: {
-    marginHorizontal: 24, marginTop: 24,
-    borderWidth: 1, borderColor: 'rgba(79,195,247,0.3)',
-    backgroundColor: 'rgba(79,195,247,0.04)',
+import { TouchableOpacity } from "react-native";
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: COLORS.background,
   },
-  walletCardInner: { padding: 24, alignItems: 'center' },
-  shieldBadge: {
-    width: 56, height: 56, borderRadius: 28,
-    backgroundColor: 'rgba(79,195,247,0.1)',
-    alignItems: 'center', justifyContent: 'center',
+  header: {
+    alignItems: "center",
+    paddingVertical: 40,
+    backgroundColor: COLORS.card,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
+  },
+  avatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: COLORS.primary,
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 16,
   },
-  shieldIcon: { fontSize: 24, color: '#4FC3F7' },
-  walletLabel: {
-    fontFamily: 'monospace', fontSize: 9, letterSpacing: 2,
-    color: 'rgba(255,255,255,0.4)', marginBottom: 12,
+  avatarText: {
+    fontSize: 32,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  userName: {
+    fontSize: 24,
   },
   address: {
-    fontFamily: 'monospace', fontSize: 13,
-    color: '#F0F6FF', letterSpacing: 1,
+    fontSize: 12,
+    fontFamily: Platform.OS === "ios" ? "Courier" : "monospace",
+    marginTop: 8,
+    paddingHorizontal: 40,
+    textAlign: "center",
   },
-  notConnected: {
-    fontFamily: 'monospace', fontSize: 12, letterSpacing: 2,
-    color: 'rgba(255,255,255,0.3)', marginBottom: 20,
+  section: {
+    padding: 20,
   },
-  connectBtn: {
-    backgroundColor: '#4FC3F7', paddingHorizontal: 32, paddingVertical: 12, marginTop: 20,
+  sectionTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    textTransform: "uppercase",
+    color: COLORS.muted,
+    marginBottom: 12,
   },
-  connectBtnText: { color: '#050810', fontFamily: 'monospace', fontWeight: '900', fontSize: 12, letterSpacing: 1 },
-  explorerBtn: {
-    borderWidth: 1, borderColor: 'rgba(79,195,247,0.3)',
-    paddingHorizontal: 20, paddingVertical: 8, marginTop: 16,
+  profileItem: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: COLORS.border,
   },
-  explorerBtnText: { fontFamily: 'monospace', fontSize: 10, color: '#4FC3F7', letterSpacing: 1 },
-
-  statsGrid: {
-    flexDirection: 'row', marginHorizontal: 24, marginTop: 16, gap: 1,
+  profileItemLeft: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
   },
-  statCard: {
-    flex: 1, backgroundColor: '#0d1117',
-    borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)',
-    padding: 16, alignItems: 'center',
+  profileItemLabel: {
+    fontSize: 16,
   },
-  statValue: { fontSize: 24, fontWeight: '900', color: '#F0F6FF', fontFamily: 'monospace' },
-  statLabel: { fontSize: 8, color: 'rgba(255,255,255,0.35)', letterSpacing: 1, marginTop: 4, fontFamily: 'monospace' },
-
-  section: { marginHorizontal: 24, marginTop: 24 },
-  sectionLabel: {
-    fontFamily: 'monospace', fontSize: 9, letterSpacing: 2,
-    color: 'rgba(255,255,255,0.4)', marginBottom: 12,
+  profileItemRight: {
+    flexDirection: "row",
+    alignItems: "center",
   },
-  networkRow: { flexDirection: 'row', borderWidth: 1, borderColor: 'rgba(255,255,255,0.08)' },
-  networkBtn: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRightWidth: 1, borderRightColor: 'rgba(255,255,255,0.08)' },
-  networkBtnActive: { backgroundColor: '#4FC3F7' },
-  networkBtnText: { fontFamily: 'monospace', fontSize: 9, color: 'rgba(255,255,255,0.4)', letterSpacing: 1 },
-  networkBtnTextActive: { color: '#050810', fontWeight: '900' },
-
-  infoCard: { borderWidth: 1, borderColor: 'rgba(255,255,255,0.07)', backgroundColor: '#0d1117' },
-  infoRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14 },
-  infoDivider: { height: 1, backgroundColor: 'rgba(255,255,255,0.06)' },
-  infoKey: { fontFamily: 'monospace', fontSize: 10, color: 'rgba(255,255,255,0.35)', letterSpacing: 1 },
-  infoVal: { fontFamily: 'monospace', fontSize: 10, color: '#F0F6FF', letterSpacing: 1 },
-
-  disconnectBtn: {
-    marginHorizontal: 24, marginTop: 24,
-    borderWidth: 1, borderColor: 'rgba(248,113,113,0.4)',
-    padding: 14, alignItems: 'center',
+  networkToggle: {
+    flexDirection: "row",
+    gap: 4,
   },
-  disconnectText: { fontFamily: 'monospace', fontSize: 11, color: '#F87171', letterSpacing: 1 },
 });
+import { Platform } from "react-native";

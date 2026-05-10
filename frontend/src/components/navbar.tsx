@@ -72,10 +72,7 @@ export default function Navbar() {
   const navItems = isArbitrator ? arbitratorNavItems : userNavItems;
 
   return (
-    <header 
-      className="h-14 border-b border-border bg-card/95 backdrop-blur-md sticky top-0 flex items-center justify-between px-8 w-full"
-      style={{ zIndex: 9999 }}
-    >
+    <header className="h-14 border-b border-border bg-card/95 backdrop-blur-md sticky top-0 z-[100] flex items-center justify-between px-8 w-full">
 
       {/* Left: Logo + Nav Links */}
       <div className="flex items-center gap-10">
@@ -121,7 +118,6 @@ export default function Navbar() {
             className="relative p-2 text-muted-foreground hover:text-foreground transition-colors flex items-center justify-center"
             onClick={() => {
               setShowNotifications(!showNotifications);
-              setShowWalletMenu(false); // Force close wallet if open
               if (!showNotifications && unreadCount > 0) markAllAsRead();
             }}
           >
@@ -132,12 +128,9 @@ export default function Navbar() {
           </button>
 
           {showNotifications && (
-            <div 
-              className="absolute top-[calc(100%+0.75rem)] left-1/2 -translate-x-1/2 w-[320px] animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200 origin-top"
-              style={{ zIndex: 10000 }}
-            >
-              <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 w-3 h-3 bg-[#0d1117] border-t border-l border-border transform rotate-45" />
-              <div className="relative bg-[#0d1117] border border-border shadow-2xl p-4 rounded-md">
+            <div className="absolute top-[calc(100%+0.5rem)] right-0 w-[280px] z-[101] animate-in fade-in slide-in-from-top-4 duration-200">
+              <div className="absolute -top-1.5 right-3 w-3 h-3 bg-card border-t border-l border-border transform rotate-45" />
+              <div className="relative bg-card border border-border shadow-2xl p-4">
                 <div className="flex justify-between items-center mb-3">
                   <p className="text-xs font-bold uppercase tracking-widest text-muted-foreground">Bildirimler</p>
                   {unreadCount > 0 && (
@@ -146,15 +139,15 @@ export default function Navbar() {
                 </div>
                 <div className="space-y-2 max-h-[50vh] overflow-y-auto pr-1">
                   {notifications.length > 0 ? notifications.map(notif => (
-                    <div key={notif.id} className={`flex gap-3 items-start p-3 border rounded-sm transition-colors ${notif.read ? 'border-border' : 'border-[#4FC3F7]/20 bg-[#4FC3F7]/5'}`}>
+                    <div key={notif.id} className={`flex gap-3 items-start p-3 border transition-colors ${notif.read ? 'border-border' : 'border-[#4FC3F7]/20 bg-[#4FC3F7]/5'}`}>
                       {notif.type === "success"
                         ? <CheckCircle2 size={14} className="text-emerald-400 shrink-0 mt-0.5" />
                         : notif.type === "error"
-                        ? <AlertCircle size={14} className="text-destructive shrink-0 mt-0.5" />
-                        : <Bell size={14} className="text-muted-foreground shrink-0 mt-0.5" />
+                          ? <AlertCircle size={14} className="text-destructive shrink-0 mt-0.5" />
+                          : <Bell size={14} className="text-muted-foreground shrink-0 mt-0.5" />
                       }
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium truncate text-foreground">{notif.title}</p>
+                        <p className="text-xs font-medium truncate">{notif.title}</p>
                         <p className="text-[10px] text-muted-foreground mt-0.5 line-clamp-2">{notif.description}</p>
                         <p className="font-mono text-[10px] text-muted-foreground/50 mt-1">{formatTimeLabel(notif.timestamp)}</p>
                       </div>
@@ -172,28 +165,22 @@ export default function Navbar() {
         {account ? (
           <div className="relative" ref={walletRef}>
             <button
-              onClick={() => {
-                setShowWalletMenu(!showWalletMenu);
-                setShowNotifications(false); // Force close notifications if open
-              }}
+              onClick={() => setShowWalletMenu(!showWalletMenu)}
               className="flex items-center gap-2 px-3 py-1.5 border border-border hover:border-[#4FC3F7]/40 transition-colors bg-card h-9"
             >
               <div className="w-5 h-5 bg-[#4FC3F7]/20 flex items-center justify-center">
                 <Wallet size={11} className="text-[#4FC3F7]" />
               </div>
-              <span className="font-mono text-xs text-foreground">
+              <span className="font-mono text-xs">
                 {account.address.slice(0, 6)}...{account.address.slice(-4)}
               </span>
               <ChevronDown size={12} className="text-muted-foreground" />
             </button>
 
             {showWalletMenu && (
-              <div 
-                className="absolute top-[calc(100%+0.75rem)] right-[-16px] w-[240px] animate-in fade-in zoom-in-95 slide-in-from-top-2 duration-200 origin-top"
-                style={{ zIndex: 10000 }}
-              >
-                <div className="absolute -top-1.5 right-[68px] w-3 h-3 bg-[#0d1117] border-t border-l border-border transform rotate-45" />
-                <div className="relative bg-[#0d1117] border border-border shadow-2xl rounded-md overflow-hidden">
+              <div className="absolute top-[calc(100%+0.5rem)] right-0 w-[220px] z-[101] animate-in fade-in slide-in-from-top-4 duration-200">
+                <div className="absolute -top-1.5 right-6 w-3 h-3 bg-card border-t border-l border-border transform rotate-45" />
+                <div className="relative bg-card border border-border shadow-2xl">
                   <button
                     className="w-full flex items-center gap-2 px-4 py-3 text-xs text-muted-foreground hover:text-foreground hover:bg-white/5 transition-colors text-left"
                     onClick={() => { navigator.clipboard.writeText(account.address); setShowWalletMenu(false); }}
@@ -223,7 +210,7 @@ export default function Navbar() {
                           {accounts.map(acc => (
                             <button
                               key={acc.address}
-                              className={`w-full flex items-center gap-2 px-2 py-2 text-xs transition-colors text-left mb-1 font-mono rounded-sm ${acc.address === account.address ? 'text-[#4FC3F7] bg-[#4FC3F7]/5' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}`}
+                              className={`w-full flex items-center gap-2 px-2 py-2 text-xs transition-colors text-left mb-1 font-mono ${acc.address === account.address ? 'text-[#4FC3F7] bg-[#4FC3F7]/5' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}`}
                               onClick={() => { switchAccount({ account: acc }); setShowWalletMenu(false); }}
                             >
                               <div className={`w-1.5 h-1.5 rounded-full shrink-0 ${acc.address === account.address ? 'bg-[#4FC3F7]' : 'bg-muted-foreground/30'}`} />

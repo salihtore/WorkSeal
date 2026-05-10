@@ -1,38 +1,42 @@
-import { create } from 'zustand';
+import { create } from "zustand";
+import { storage } from "../lib/storage";
 
 interface WalletState {
   address: string | null;
+  sessionTopic: string | null;
   isConnected: boolean;
-  network: 'mainnet' | 'testnet' | 'devnet';
-  setAddress: (address: string | null) => void;
-  setNetwork: (network: 'mainnet' | 'testnet' | 'devnet') => void;
-  logout: () => void;
-  executeTransaction: (tx: any) => Promise<any>;
-  zkLoginData: {
-    address: string | null;
-    jwt: string | null;
-    salt: string | null;
-    proof: any | null;
-  } | null;
-  setZkLoginData: (data: any) => void;
+  network: "mainnet" | "testnet" | "devnet";
+  login: (address: string, sessionTopic?: string) => Promise<void>;
+  logout: () => Promise<void>;
+  initSession: () => Promise<void>;
+  setNetwork: (network: "mainnet" | "testnet" | "devnet") => void;
 }
 
-export const useWalletStore = create<WalletState>((set, get) => ({
+export const useWalletStore = create<WalletState>((set) => ({
   address: null,
+  sessionTopic: null,
   isConnected: false,
-  network: 'testnet',
-  zkLoginData: null,
-  setAddress: (address) => set({ address, isConnected: !!address }),
-  setNetwork: (network) => set({ network }),
-  setZkLoginData: (data) => set({ zkLoginData: data }),
-  logout: () => set({ address: null, isConnected: false, zkLoginData: null }),
-  executeTransaction: async (tx) => {
-    console.log('Transaction built:', tx);
-    // Simulate wallet interaction delay
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ digest: '0x' + Math.random().toString(16).slice(2, 10) });
-      }, 2000);
-    });
+  network: "testnet",
+
+  login: async (address, sessionTopic) => {
+    await storage.set("wallet_address", address);
+    if (sessionTopic) await storage.set("session_topic", sessionTopic);
+    set({ address, sessionTopic, isConnected: true });
   },
+
+  logout: async () => {
+    await storage.remove("wallet_address");
+    await storage.remove("session_topic");
+    set({ address: null, sessionTopic: null, isConnected: false });
+  },
+
+  initSession: async () => {
+    const address = await storage.get("wallet_address");
+    const sessionTopic = await storage.get("session_topic");
+    if (address) {
+      set({ address, sessionTopic, isConnected: true });
+    }
+  },
+
+  setNetwork: (network) => set({ network }),
 }));

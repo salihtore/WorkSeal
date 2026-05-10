@@ -1,84 +1,53 @@
-/**
- * Lightweight Sui JSON-RPC Client for React Native
- * Uses plain fetch() - no browser-specific APIs, no polyfills needed
- */
+import { FULLNODE_URL } from "../constants/config";
 
-const NETWORKS = {
-  mainnet: 'https://fullnode.mainnet.sui.io/',
-  testnet: 'https://fullnode.testnet.sui.io/',
-  devnet: 'https://fullnode.devnet.sui.io/',
-} as const;
+export const suiClient = {
+  async rpcCall(method: string, params: any[]) {
+    const response = await fetch(FULLNODE_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method,
+        params,
+      }),
+    });
+    const data = await response.json();
+    if (data.error) {
+      throw new Error(data.error.message);
+    }
+    return data.result;
+  },
 
-export type SuiNetwork = keyof typeof NETWORKS;
+  async getSuiBalance(address: string) {
+    const result = await this.rpcCall("suix_getBalance", [address, "0x2::sui::SUI"]);
+    return result.totalBalance;
+  },
 
-let requestId = 1;
+  async getObject(objectId: string) {
+    return await this.rpcCall("sui_getObject", [
+      objectId,
+      { showContent: true, showOwner: true, showDisplay: true },
+    ]);
+  },
 
-async function rpcCall(network: SuiNetwork, method: string, params: any[]) {
-  const response = await fetch(NETWORKS[network], {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      jsonrpc: '2.0',
-      id: requestId++,
-      method,
-      params,
-    }),
-  });
+  async multiGetObjects(objectIds: string[]) {
+    return await this.rpcCall("sui_multiGetObjects", [
+      objectIds,
+      { showContent: true, showOwner: true },
+    ]);
+  },
 
-  const json = await response.json();
+  async queryEvents(query: any, cursor: any = null, limit: number = 50) {
+    return await this.rpcCall("suix_queryEvents", [query, cursor, limit, false]);
+  },
 
-  if (json.error) {
-    throw new Error(`Sui RPC Error: ${json.error.message}`);
-  }
-
-  return json.result;
-}
-
-// Get SUI balance for an address
-export async function getSuiBalance(address: string, network: SuiNetwork = 'testnet') {
-  return rpcCall(network, 'suix_getBalance', [address, '0x2::sui::SUI']);
-}
-
-// Get owned objects (contracts, NFTs etc.)
-export async function getOwnedObjects(
-  address: string,
-  structType: string,
-  network: SuiNetwork = 'testnet'
-) {
-  return rpcCall(network, 'suix_getOwnedObjects', [
-    address,
-    { filter: { StructType: structType }, options: { showContent: true, showType: true } },
-    null,
-    50,
-  ]);
-}
-
-// Get a specific object by ID
-export async function getObject(objectId: string, network: SuiNetwork = 'testnet') {
-  return rpcCall(network, 'sui_getObject', [objectId, { showContent: true, showType: true }]);
-}
-
-// Get transaction block details
-export async function getTransactionBlock(digest: string, network: SuiNetwork = 'testnet') {
-  return rpcCall(network, 'sui_getTransactionBlock', [digest, { showEffects: true, showInput: true }]);
-}
-
-// Query events
-export async function queryEvents(
-  query: any,
-  cursor: any = null,
-  limit: number = 50,
-  descendingOrder: boolean = true,
-  network: SuiNetwork = 'testnet'
-) {
-  return rpcCall(network, 'suix_queryEvents', [query, cursor, limit, descendingOrder]);
-}
-
-// Multi get objects
-export async function multiGetObjects(
-  objectIds: string[],
-  options: any = { showContent: true },
-  network: SuiNetwork = 'testnet'
-) {
-  return rpcCall(network, 'sui_multiGetObjects', [objectIds, options]);
-}
+  async executeTransactionBlock(txBytes: string, signatures: string[]) {
+    return await this.rpcCall("sui_executeTransactionBlock", [
+      txBytes,
+      signatures,
+      { showEffects: true, showEvents: true },
+      "WaitForLocalExecution",
+    ]);
+  },
+};

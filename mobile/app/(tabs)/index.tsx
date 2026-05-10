@@ -1,363 +1,242 @@
-import { StyleSheet, View, TouchableOpacity, ScrollView } from 'react-native';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { useWalletStore } from '@/hooks/use-wallet-store';
-import { useContracts } from '@/hooks/use-contracts';
-import { useRouter } from 'expo-router';
-import { getSuiBalance } from '@/lib/sui-client';
-import React, { useState, useEffect } from 'react';
-import { Alert } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
-import * as Linking from 'expo-linking';
-import { prepareZkLoginSession, getGoogleAuthUrl, fetchSalt, deriveAddress } from '@/lib/zklogin';
-
-WebBrowser.maybeCompleteAuthSession();
+import { View, StyleSheet, ScrollView, RefreshControl, TouchableOpacity } from "react-native";
+import { useWalletStore } from "../../hooks/use-wallet-store";
+import { useContracts } from "../../hooks/use-contracts";
+import { useWalletConnect } from "../../hooks/use-wallet-connect";
+import { ThemedText } from "../../components/ThemedText";
+import { Card } from "../../components/ui/Card";
+import { Button } from "../../components/ui/Button";
+import { ContractCard } from "../../components/ui/ContractCard";
+import { formatAddress, mistToSui, ContractStatus } from "../../types";
+import { COLORS } from "../../constants/colors";
+import { Plus, Wallet, Shield, AlertTriangle, FileText, Compass } from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { suiClient } from "../../lib/sui-client";
+import { useEffect, useState } from "react";
 
 export default function DashboardScreen() {
+  const { address, isConnected } = useWalletStore();
+  const { getMyContracts, getOpenJobs, isLoading, refetch } = useContracts();
+  const { connect } = useWalletConnect();
   const router = useRouter();
-  const { address, isConnected, setAddress, logout, network } = useWalletStore();
-  const { contracts, isLoading } = useContracts();
-  const [balance, setBalance] = useState('0.00');
-  const [authLoading, setAuthLoading] = useState(false);
+  const [balance, setBalance] = useState("0");
 
-  // Setup Redirect URI for Expo
-  // const redirectUri = AuthSession.makeRedirectUri();
+  const myContracts = getMyContracts();
+  const openJobs = getOpenJobs();
 
   useEffect(() => {
-    if (isConnected && address) {
-      getSuiBalance(address, network).then((res) => {
-        const total = Number(res.totalBalance) / 1_000_000_000;
-        setBalance(total.toFixed(2));
-      });
+    if (address) {
+      suiClient.getSuiBalance(address).then(b => setBalance(mistToSui(b)));
     }
-  }, [isConnected, address, network]);
+  }, [address, myContracts]);
 
-  const handleGoogleLogin = async () => {
-    setAuthLoading(true);
-    console.log('Starting Google Login flow...');
-    try {
-      // 1. Prepare session
-      const session = await prepareZkLoginSession();
-      console.log('Session prepared:', session);
-      
-      // 2. Setup Redirect URI
-      // For local web, localhost:8081 is standard.
-      const redirectUri = Linking.createURL('/');
-      console.log('Redirect URI:', redirectUri);
+  const stats = [
+    { label: "Aktif İş", value: myContracts.filter(c => c.status === ContractStatus.Active).length, icon: <FileText size={20} color={COLORS.primary} /> },
+    { label: "Escrow", value: `${balance} SUI`, icon: <Shield size={20} color={COLORS.success} /> },
+    { label: "Anlaşmazlık", value: myContracts.filter(c => c.status === ContractStatus.Disputed).length, icon: <AlertTriangle size={20} color={COLORS.destructive} /> },
+  ];
 
-      // 3. Open Auth URL
-      const authUrl = getGoogleAuthUrl(session.nonce, redirectUri);
-      console.log('Auth URL:', authUrl);
-
-      // Alert for manual debugging in browser if needed
-      // alert("Opening Google Login...");
-
-      const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
-      console.log('Auth Result:', result);
-
-      if (result.type === 'success' && result.url) {
-        const url = new URL(result.url);
-        // id_token is usually in the hash/fragment for ZkLogin
-        const hash = url.hash.replace('#', '');
-        const params = new URLSearchParams(hash);
-        const idToken = params.get('id_token');
-
-        if (idToken) {
-          console.log('JWT Received!');
-          const salt = await fetchSalt(idToken);
-          const derivedAddr = deriveAddress(idToken, salt);
-          setAddress(derivedAddr);
-        } else {
-          Alert.alert('Auth Error', 'ID Token not found in response.');
-        }
-      } else if (result.type === 'cancel') {
-        console.log('User cancelled login.');
-      }
-    } catch (error: any) {
-      console.error('Detailed Login Error:', error);
-      Alert.alert('Login Failed', error.message);
-    } finally {
-      setAuthLoading(false);
-    }
-  };
+  if (!isConnected) {
+    return (
+      <View style={styles.centerContainer}>
+        <Card style={styles.loginCard}>
+          <Wallet size={48} color={COLORS.primary} style={{ marginBottom: 16 }} />
+          <ThemedText variant="title">Bağlı Değil</ThemedText>
+          <ThemedText variant="muted" style={{ textAlign: "center", marginVertical: 16 }}>
+            İşlemlerinizi görmek ve yeni sözleşme oluşturmak için cüzdanınızı bağlayın.
+          </ThemedText>
+          <Button label="CÜZDANI BAĞLA" onPress={connect} />
+        </Card>
+      </View>
+    );
+  }
 
   return (
-    <ThemedView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <ThemedText type="title" style={styles.title}>WORKSEAL</ThemedText>
-          <ThemedText style={styles.subtitle}>Decentralized Work & Escrow</ThemedText>
+    <ScrollView 
+      style={styles.container}
+      refreshControl={<RefreshControl refreshing={isLoading} onRefresh={refetch} tintColor={COLORS.primary} />}
+    >
+      <View style={styles.header}>
+        <View>
+          <ThemedText variant="muted">Cüzdan Adresi</ThemedText>
+          <ThemedText style={styles.addressText}>{formatAddress(address!)}</ThemedText>
         </View>
+        <Button 
+          label="YENİ" 
+          onPress={() => router.push("/contracts/new")} 
+          size="sm" 
+          icon={<Plus size={16} color="#fff" />} 
+        />
+      </View>
 
-        <TouchableOpacity 
-          style={styles.postJobBtn} 
-          onPress={() => router.push('/contracts/new')}
-        >
-          <ThemedText style={styles.postJobBtnText}>+ POST A JOB</ThemedText>
-        </TouchableOpacity>
+      <View style={styles.statsGrid}>
+        {stats.map((stat, i) => (
+          <Card key={i} style={styles.statCard} padding={12}>
+            {stat.icon}
+            <ThemedText variant="muted" style={styles.statLabel}>{stat.label}</ThemedText>
+            <ThemedText style={styles.statValue}>{stat.value}</ThemedText>
+          </Card>
+        ))}
+      </View>
 
-        {isConnected && (
-          <View style={styles.balanceCard}>
-            <ThemedText style={styles.balanceLabel}>AVAILABLE BALANCE</ThemedText>
-            <View style={styles.balanceRow}>
-              <ThemedText style={styles.balanceValue}>{balance}</ThemedText>
-              <ThemedText style={styles.balanceUnit}>SUI</ThemedText>
-            </View>
-            <View style={styles.walletBadge}>
-              <ThemedText style={styles.walletAddress}>
-                {address?.slice(0, 10)}...{address?.slice(-8)}
-              </ThemedText>
-              <TouchableOpacity onPress={logout}>
-                <ThemedText style={styles.logoutText}>EXIT</ThemedText>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
+      <SectionHeader title="Son Sözleşmelerim" onSeeAll={() => router.push("/(tabs)/contracts")} />
+      {myContracts.length > 0 ? (
+        myContracts.slice(0, 4).map(c => (
+          <ContractCard 
+            key={c.id} 
+            contract={c} 
+            currentUserAddress={address} 
+            onPress={() => router.push(`/contracts/${c.id}`)} 
+          />
+        ))
+      ) : (
+        <EmptyState 
+          icon={<FileText size={48} color={COLORS.muted} />} 
+          title="Henüz sözleşme yok" 
+          description="İlk sözleşmeni oluşturmak için yukarıdaki '+' butonuna tıkla." 
+        />
+      )}
 
-        {!isConnected && (
-          <TouchableOpacity 
-            style={styles.connectBtn} 
-            onPress={handleGoogleLogin}
-            disabled={authLoading}
-          >
-            <ThemedText style={styles.connectBtnText}>
-              {authLoading ? 'AUTHORIZING...' : 'CONTINUE WITH GOOGLE'}
-            </ThemedText>
-          </TouchableOpacity>
-        )}
-        
-        <View style={styles.content}>
-          <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
-              <ThemedText style={styles.statLabel}>CONTRACTS</ThemedText>
-              <ThemedText style={styles.statValue}>
-                {isLoading ? '...' : contracts.length}
-              </ThemedText>
-            </View>
-            <View style={styles.statCard}>
-              <ThemedText style={styles.statLabel}>IN ESCROW</ThemedText>
-              <ThemedText style={styles.statValue}>0.00</ThemedText>
-            </View>
-          </View>
+      <SectionHeader title="Pazar Yeri (Açık İşler)" onSeeAll={() => router.push("/(tabs)/explore")} />
+      {openJobs.length > 0 ? (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
+          {openJobs.slice(0, 5).map(job => (
+            <TouchableOpacity 
+              key={job.id} 
+              onPress={() => router.push(`/contracts/${job.id}`)}
+              style={styles.jobCard}
+            >
+              <Card padding={16} style={{ width: 240, height: 160 }}>
+                <ThemedText numberOfLines={1} style={styles.jobTitle}>{job.title}</ThemedText>
+                <ThemedText variant="muted" numberOfLines={2} style={styles.jobDesc}>{job.description}</ThemedText>
+                <View style={styles.jobFooter}>
+                  <ThemedText variant="primary" style={styles.jobPrice}>{mistToSui(job.total_budget)} SUI</ThemedText>
+                </View>
+              </Card>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      ) : (
+        <EmptyState 
+          icon={<Compass size={48} color={COLORS.muted} />} 
+          title="Açık iş bulunamadı" 
+          description="Şu an için pazar yerinde listelenen açık iş bulunmuyor." 
+        />
+      )}
+      
+      <View style={{ height: 40 }} />
+    </ScrollView>
+  );
+}
 
-          <View style={styles.recentSection}>
-            <ThemedText type="defaultSemiBold" style={styles.recentTitle}>RECENT CONTRACTS</ThemedText>
-            {isLoading ? (
-              <ThemedText style={styles.emptyText}>Loading...</ThemedText>
-            ) : contracts.length > 0 ? (
-              contracts.slice(0, 5).map((contract) => (
-                <TouchableOpacity 
-                  key={contract.id} 
-                  style={styles.recentItem}
-                  onPress={() => router.push(`/contracts/${contract.id}`)}
-                >
-                  <View style={{ flex: 1 }}>
-                    <ThemedText style={styles.recentItemTitle} numberOfLines={1}>{contract.title}</ThemedText>
-                    <ThemedText style={styles.recentItemAddress}>{contract.id.slice(0, 10)}...</ThemedText>
-                  </View>
-                  <View style={styles.statusBadge}>
-                    <ThemedText style={styles.statusText}>
-                      {contract.status === 0 ? 'OPEN' : contract.status === 1 ? 'ACTIVE' : 'COMPLETED'}
-                    </ThemedText>
-                  </View>
-                </TouchableOpacity>
-              ))
-            ) : (
-              <ThemedText style={styles.emptyText}>No contracts found</ThemedText>
-            )}
-          </View>
-        </View>
-      </ScrollView>
-    </ThemedView>
+function SectionHeader({ title, onSeeAll }: { title: string; onSeeAll: () => void }) {
+  return (
+    <View style={styles.sectionHeader}>
+      <ThemedText style={styles.sectionTitle}>{title}</ThemedText>
+      <TouchableOpacity onPress={onSeeAll}>
+        <ThemedText variant="primary">Tümünü Gör</ThemedText>
+      </TouchableOpacity>
+    </View>
+  );
+}
+
+function EmptyState({ icon, title, description }: { icon: any; title: string; description: string }) {
+  return (
+    <Card style={styles.emptyContainer} padding={24}>
+      {icon}
+      <ThemedText style={styles.emptyTitle}>{title}</ThemedText>
+      <ThemedText variant="muted" style={styles.emptyDesc}>{description}</ThemedText>
+    </Card>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
-    paddingTop: 64,
+    backgroundColor: COLORS.background,
+    padding: 20,
+  },
+  centerContainer: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+    justifyContent: "center",
+    padding: 40,
+  },
+  loginCard: {
+    alignItems: "center",
   },
   header: {
-    marginBottom: 32,
-  },
-  title: {
-    fontSize: 32,
-    letterSpacing: 2,
-    fontWeight: '900',
-  },
-  subtitle: {
-    opacity: 0.6,
-    fontSize: 14,
-    marginTop: 4,
-  },
-  connectBtn: {
-    backgroundColor: '#4FC3F7',
-    padding: 16,
-    alignItems: 'center',
-    marginBottom: 32,
-  },
-  postJobBtn: {
-    borderWidth: 1,
-    borderColor: '#4FC3F7',
-    padding: 14,
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 24,
-  },
-  postJobBtnText: {
-    color: '#4FC3F7',
-    fontWeight: '900',
-    letterSpacing: 1,
-    fontSize: 12,
-  },
-  connectBtnText: {
-    color: '#050810',
-    fontWeight: '900',
-    letterSpacing: 1,
-  },
-  walletInfo: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    padding: 12,
-    marginBottom: 32,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.07)',
+    marginTop: 10,
   },
   addressText: {
-    fontFamily: 'monospace',
-    fontSize: 14,
-    opacity: 0.8,
-  },
-  balanceCard: {
-    backgroundColor: '#0d1117',
-    borderWidth: 1,
-    borderColor: 'rgba(79, 195, 247, 0.2)',
-    padding: 24,
-    marginBottom: 32,
-    position: 'relative',
-    overflow: 'hidden',
-  },
-  balanceLabel: {
-    fontFamily: 'monospace',
-    fontSize: 10,
-    opacity: 0.5,
-    letterSpacing: 2,
-    marginBottom: 8,
-  },
-  balanceRow: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
-    gap: 8,
-    marginBottom: 20,
-  },
-  balanceValue: {
-    fontSize: 48,
-    fontWeight: '900',
-    color: '#fff',
-  },
-  balanceUnit: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#4FC3F7',
-  },
-  walletBadge: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.03)',
-    padding: 10,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.05)',
-  },
-  walletAddress: {
-    fontFamily: 'monospace',
-    fontSize: 11,
-    opacity: 0.4,
-  },
-  logoutText: {
-    fontSize: 10,
-    color: '#F87171',
-    fontWeight: 'bold',
-    fontFamily: 'monospace',
-  },
-  content: {
-    gap: 16,
+    fontSize: 18,
+    fontWeight: "bold",
   },
   statsGrid: {
-    flexDirection: 'row',
-    gap: 16,
-    marginBottom: 8,
+    flexDirection: "row",
+    gap: 12,
+    marginBottom: 32,
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#0d1117',
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.07)',
+    alignItems: "flex-start",
   },
   statLabel: {
-    fontFamily: 'monospace',
-    fontSize: 9,
-    opacity: 0.5,
-    letterSpacing: 1.5,
-    color: '#4FC3F7',
+    fontSize: 12,
+    marginTop: 8,
   },
   statValue: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    marginTop: 4,
-  },
-  recentSection: {
-    marginTop: 24,
-    gap: 12,
-  },
-  recentTitle: {
-    fontSize: 12,
-    letterSpacing: 1.5,
-    opacity: 0.5,
-    marginBottom: 8,
-    fontFamily: 'monospace',
-  },
-  recentItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    padding: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.05)',
-    marginBottom: -1,
-  },
-  recentItemTitle: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#F0F6FF',
+    fontWeight: "bold",
+    marginTop: 2,
   },
-  recentItemAddress: {
-    fontFamily: 'monospace',
-    fontSize: 10,
-    opacity: 0.3,
-    marginTop: 4,
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 16,
+    marginTop: 8,
   },
-  statusBadge: {
-    backgroundColor: 'rgba(79, 195, 247, 0.08)',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderWidth: 1,
-    borderColor: 'rgba(79, 195, 247, 0.15)',
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: "bold",
   },
-  statusText: {
-    fontSize: 9,
-    color: '#4FC3F7',
-    fontWeight: 'bold',
-    fontFamily: 'monospace',
+  horizontalScroll: {
+    marginBottom: 24,
   },
-  emptyText: {
-    opacity: 0.3,
+  jobCard: {
+    marginRight: 12,
+  },
+  jobTitle: {
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 6,
+  },
+  jobDesc: {
     fontSize: 12,
-    fontFamily: 'monospace',
-    textAlign: 'center',
-    marginTop: 32,
+    flex: 1,
+  },
+  jobFooter: {
+    marginTop: 10,
+  },
+  jobPrice: {
+    fontWeight: "bold",
+  },
+  emptyContainer: {
+    alignItems: "center",
+    justifyContent: "center",
+    marginVertical: 10,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginTop: 16,
+  },
+  emptyDesc: {
+    textAlign: "center",
+    marginTop: 8,
   },
 });

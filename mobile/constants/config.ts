@@ -1,4 +1,7 @@
-export const WORKSEAL_PACKAGE_ID = "0x347761a22dd046d6c4b34b17a35fe388c644c8315bf5830d28bcf9429c4c4e86";
-export const WORKSEAL_MODULE = "workseal";
+export const PACKAGE_ID = "0xPACKAGE_ID_BURAYA";
 export const CLOCK_OBJECT_ID = "0x6";
-export const ARBITRATOR_REGISTRY_ID = "0x9871edff64acc2ae51fe5f637a15c5051ad1921c2cfeb86efb9007ced3421dd8";
+export const SUI_NETWORK = "testnet" as const;
+export const FULLNODE_URL = "https://fullnode.testnet.sui.io/";
+export const WALLETCONNECT_PROJECT_ID = "0117266ecfdfecf89129652d5a32ca33";
+export const MIST_PER_SUI = BigInt(1_000_000_000);
+export const APP_SCHEME = "workseal://";
