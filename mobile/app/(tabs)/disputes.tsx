@@ -1,4 +1,4 @@
-import { View, StyleSheet, FlatList, RefreshControl } from "react-native";
+import { View, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from "react-native";
 import { useContracts } from "../../hooks/use-contracts";
 import { ThemedText } from "../../components/ThemedText";
 import { Card } from "../../components/ui/Card";
@@ -6,7 +6,6 @@ import { COLORS } from "../../constants/colors";
 import { ContractStatus, formatDate, formatAddress } from "../../types";
 import { AlertTriangle, CheckCircle2 } from "lucide-react-native";
 import { useRouter } from "expo-router";
-import { TouchableOpacity } from "react-native";
 
 export default function DisputesScreen() {
   const { getMyContracts, isLoading, refetch } = useContracts();
@@ -30,7 +29,7 @@ export default function DisputesScreen() {
                 </View>
                 
                 <ThemedText variant="muted" style={styles.disputeReason}>
-                  "{lastDispute?.reason || "Sebep belirtilmedi"}"
+                  "{lastDispute?.reason ?? "Sebep belirtilmedi"}"
                 </ThemedText>
 
                 <View style={styles.itemFooter}>

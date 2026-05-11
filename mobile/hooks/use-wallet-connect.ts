@@ -5,7 +5,7 @@ import { useWalletStore } from "./use-wallet-store";
 import { Alert } from "react-native";
 
 export const useWalletConnect = () => {
-  const { address, sessionTopic, login, logout } = useWalletStore();
+  const { address, sessionTopic, login, logout, network } = useWalletStore();
   const [isConnecting, setIsConnecting] = useState(false);
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -24,7 +24,7 @@ export const useWalletConnect = () => {
               "sui_signTransactionBlock",
               "sui_signMessage",
             ],
-            chains: ["sui:testnet"],
+            chains: [`sui:${network}`],
             events: ["chainChanged", "accountsChanged"],
           },
         },
@@ -82,7 +82,7 @@ export const useWalletConnect = () => {
       const client = await getSignClient();
       const result = await client.request({
         topic: sessionTopic,
-        chainId: "sui:testnet",
+        chainId: `sui:${network}`,
         request: {
           method: "sui_signAndExecuteTransactionBlock",
           params: {

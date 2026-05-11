@@ -4,6 +4,7 @@ import {
   ActivityIndicator,
   StyleSheet,
   View,
+  ViewStyle,
 } from "react-native";
 import { COLORS } from "../../constants/colors";
 import { ReactNode } from "react";
@@ -16,6 +17,7 @@ interface ButtonProps {
   disabled?: boolean;
   loading?: boolean;
   icon?: ReactNode;
+  style?: ViewStyle | ViewStyle[];
 }
 
 export const Button = ({
@@ -26,6 +28,7 @@ export const Button = ({
   disabled,
   loading,
   icon,
+  style,
 }: ButtonProps) => {
   const getStyles = () => {
     let bg = COLORS.primary;
@@ -59,6 +62,7 @@ export const Button = ({
         styles.base,
         styles[size],
         { backgroundColor: bg, borderColor: border, borderWidth: 1 },
+        style,
       ]}
     >
       {loading ? (

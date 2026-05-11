@@ -1,4 +1,4 @@
-import { View, StyleSheet, ScrollView, RefreshControl, Alert, TextInput } from "react-native";
+import { View, StyleSheet, ScrollView, RefreshControl, Alert, TextInput, ActivityIndicator } from "react-native";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useContracts } from "../../hooks/use-contracts";
 import { useWalletStore } from "../../hooks/use-wallet-store";
@@ -196,7 +196,7 @@ export default function ContractDetailScreen() {
   );
 }
 
-import { ActivityIndicator } from "react-native";
+
 
 const styles = StyleSheet.create({
   container: {

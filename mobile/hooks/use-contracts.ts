@@ -4,6 +4,8 @@ import { PACKAGE_ID } from "../constants/config";
 import { WorkContract, ContractStatus, Milestone, DisputeRecord } from "../types";
 import { useWalletStore } from "./use-wallet-store";
 
+const isPackageConfigured = !PACKAGE_ID.includes("BURAYA") && PACKAGE_ID.startsWith("0x");
+
 export const useContracts = () => {
   const { address } = useWalletStore();
 
@@ -65,7 +67,9 @@ export const useContracts = () => {
   const { data: allContracts = [], isLoading, refetch } = useQuery({
     queryKey: ["contracts"],
     queryFn: fetchContracts,
-    refetchInterval: 10000,
+    enabled: isPackageConfigured,
+    refetchInterval: 30_000,
+    staleTime: 15_000,
   });
 
   const getMyContracts = () => {

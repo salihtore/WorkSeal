@@ -1,6 +1,9 @@
 import { Transaction } from "@mysten/sui/transactions";
-import { PACKAGE_ID, CLOCK_OBJECT_ID } from "../constants/config";
+import { SuiClient, getFullnodeUrl } from "@mysten/sui/client";
+import { PACKAGE_ID, CLOCK_OBJECT_ID, SUI_NETWORK } from "../constants/config";
 import { CreateContractInput } from "../types";
+
+const suiClientForBuild = new SuiClient({ url: getFullnodeUrl(SUI_NETWORK) });
 
 export const buildCreateContractTx = async (
   params: CreateContractInput & { senderAddress: string }
@@ -21,7 +24,7 @@ export const buildCreateContractTx = async (
   });
 
   tx.setSender(params.senderAddress);
-  const bytes = await tx.build();
+  const bytes = await tx.build({ client: suiClientForBuild });
   return Buffer.from(bytes).toString("base64");
 };
 
@@ -40,7 +43,7 @@ export const buildFundContractTx = async (
   });
 
   tx.setSender(senderAddress);
-  const bytes = await tx.build();
+  const bytes = await tx.build({ client: suiClientForBuild });
   return Buffer.from(bytes).toString("base64");
 };
 
@@ -57,7 +60,7 @@ export const buildSubmitMilestoneTx = async (
   });
 
   tx.setSender(senderAddress);
-  const bytes = await tx.build();
+  const bytes = await tx.build({ client: suiClientForBuild });
   return Buffer.from(bytes).toString("base64");
 };
 
@@ -74,7 +77,7 @@ export const buildApproveAndReleaseTx = async (
   });
 
   tx.setSender(senderAddress);
-  const bytes = await tx.build();
+  const bytes = await tx.build({ client: suiClientForBuild });
   return Buffer.from(bytes).toString("base64");
 };
 
@@ -95,6 +98,6 @@ export const buildRaiseDisputeTx = async (
   });
 
   tx.setSender(senderAddress);
-  const bytes = await tx.build();
+  const bytes = await tx.build({ client: suiClientForBuild });
   return Buffer.from(bytes).toString("base64");
 };

@@ -1,4 +1,4 @@
-import { View, StyleSheet, FlatList, RefreshControl } from "react-native";
+import { View, StyleSheet, FlatList, RefreshControl, TouchableOpacity } from "react-native";
 import { useContracts } from "../../hooks/use-contracts";
 import { useWalletStore } from "../../hooks/use-wallet-store";
 import { ThemedText } from "../../components/ThemedText";
@@ -76,8 +76,6 @@ export default function EscrowScreen() {
     </View>
   );
 }
-
-import { TouchableOpacity } from "react-native";
 
 const styles = StyleSheet.create({
   container: {

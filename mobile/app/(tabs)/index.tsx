@@ -25,7 +25,9 @@ export default function DashboardScreen() {
 
   useEffect(() => {
     if (address) {
-      suiClient.getSuiBalance(address).then(b => setBalance(mistToSui(b)));
+      suiClient.getSuiBalance(address)
+        .then((b) => { if (b) setBalance(mistToSui(b)); })
+        .catch(() => setBalance("0"));
     }
   }, [address, myContracts]);
 

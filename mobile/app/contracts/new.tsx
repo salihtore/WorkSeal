@@ -57,13 +57,19 @@ export default function NewContractScreen() {
       return;
     }
 
-    if (!clientAddress.startsWith("0x")) {
+    if (!clientAddress.startsWith("0x") || clientAddress.length < 20) {
       Alert.alert("Hata", "Geçerli bir müşteri adresi girin (0x...).");
       return;
     }
 
+    const days = parseInt(deadlineDays);
+    if (!days || days < 1) {
+      Alert.alert("Hata", "Süre en az 1 gün olmalıdır.");
+      return;
+    }
+
     try {
-      const deadlineMs = Date.now() + parseInt(deadlineDays) * 24 * 60 * 60 * 1000;
+      const deadlineMs = Date.now() + days * 24 * 60 * 60 * 1000;
       
       await createContract({
         title,

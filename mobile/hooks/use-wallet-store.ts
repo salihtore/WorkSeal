@@ -33,8 +33,12 @@ export const useWalletStore = create<WalletState>((set) => ({
   initSession: async () => {
     const address = await storage.get("wallet_address");
     const sessionTopic = await storage.get("session_topic");
-    if (address) {
+    if (address && sessionTopic) {
       set({ address, sessionTopic, isConnected: true });
+    } else if (address) {
+      // Address exists but no session - clear stale data
+      await storage.remove("wallet_address");
+      set({ address: null, sessionTopic: null, isConnected: false });
     }
   },
 

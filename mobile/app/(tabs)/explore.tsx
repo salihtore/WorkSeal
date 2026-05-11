@@ -1,4 +1,4 @@
-import { View, StyleSheet, FlatList, TextInput, RefreshControl } from "react-native";
+import { View, StyleSheet, FlatList, TextInput, RefreshControl, TouchableOpacity } from "react-native";
 import { useContracts } from "../../hooks/use-contracts";
 import { useWalletStore } from "../../hooks/use-wallet-store";
 import { ThemedText } from "../../components/ThemedText";
@@ -8,7 +8,6 @@ import { formatAddress, mistToSui } from "../../types";
 import { Search, Compass, Wallet } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { useState } from "react";
-import { TouchableOpacity } from "react-native";
 
 export default function ExploreScreen() {
   const { getOpenJobs, isLoading, refetch } = useContracts();

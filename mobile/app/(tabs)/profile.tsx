@@ -1,4 +1,4 @@
-import { View, StyleSheet, ScrollView, Alert, Linking } from "react-native";
+import { View, StyleSheet, ScrollView, Alert, Linking, TouchableOpacity, Platform } from "react-native";
 import { useWalletStore } from "../../hooks/use-wallet-store";
 import { useWalletConnect } from "../../hooks/use-wallet-connect";
 import { ThemedText } from "../../components/ThemedText";
@@ -33,7 +33,7 @@ export default function ProfileScreen() {
       <View style={styles.header}>
         <View style={styles.avatar}>
           <ThemedText style={styles.avatarText}>
-            {address?.slice(2, 4).toUpperCase()}
+            {address ? `${address.slice(2, 4)}${address.slice(-2)}`.toUpperCase() : "??"}
           </ThemedText>
         </View>
         <ThemedText variant="title" style={styles.userName}>Anonim Kullanıcı</ThemedText>
@@ -103,7 +103,7 @@ function ProfileItem({ icon, label, value, onPress }: { icon: any; label: string
   );
 }
 
-import { TouchableOpacity } from "react-native";
+
 
 const styles = StyleSheet.create({
   container: {
@@ -176,4 +176,4 @@ const styles = StyleSheet.create({
     gap: 4,
   },
 });
-import { Platform } from "react-native";
+
