@@ -1,24 +1,29 @@
-import { View, ViewProps, StyleSheet } from "react-native";
-import { COLORS } from "../../constants/colors";
+import React from 'react';
+import { View, StyleSheet, ViewStyle } from 'react-native';
+import { COLORS, RADIUS } from '@/constants/theme';
 
-interface CardProps extends ViewProps {
-  padding?: number;
+interface CardProps {
+  children: React.ReactNode;
+  style?: ViewStyle;
+  noBorder?: boolean;
 }
 
-export const Card = ({ children, style, padding = 16, ...props }: CardProps) => {
+export default function Card({ children, style, noBorder = false }: CardProps) {
   return (
-    <View style={[styles.card, { padding }, style]} {...props}>
+    <View style={[styles.card, noBorder && styles.noBorder, style]}>
       {children}
     </View>
   );
-};
+}
 
 const styles = StyleSheet.create({
   card: {
     backgroundColor: COLORS.card,
-    borderColor: COLORS.border,
     borderWidth: 1,
-    borderRadius: 16,
-    overflow: "hidden",
+    borderColor: COLORS.border,
+    borderRadius: RADIUS,
+  },
+  noBorder: {
+    borderWidth: 0,
   },
 });

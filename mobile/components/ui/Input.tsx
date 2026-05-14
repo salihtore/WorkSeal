@@ -1,66 +1,111 @@
+import React from 'react';
 import {
-  View,
   TextInput,
+  View,
   Text,
   StyleSheet,
   TextInputProps,
-} from "react-native";
-import { COLORS } from "../../constants/colors";
+  ViewStyle,
+} from 'react-native';
+import { COLORS, FONTS, RADIUS, SPACING } from '@/constants/theme';
 
 interface InputProps extends TextInputProps {
   label?: string;
   error?: string;
+  containerStyle?: ViewStyle;
+  mono?: boolean;
 }
 
-export const Input = ({ label, error, style, ...props }: InputProps) => {
+export default function Input({ label, error, containerStyle, mono, style, ...props }: InputProps) {
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, containerStyle]}>
       {label && <Text style={styles.label}>{label}</Text>}
       <TextInput
         style={[
           styles.input,
-          error ? styles.inputError : null,
-          props.multiline ? styles.multiline : null,
-          style,
+          mono && styles.inputMono,
+          error && styles.inputError,
+          style as any,
         ]}
-        placeholderTextColor={COLORS.muted}
+        placeholderTextColor={COLORS.mutedForeground}
+        selectionColor={COLORS.primary}
         {...props}
       />
-      {error && <Text style={styles.errorText}>{error}</Text>}
+      {error && <Text style={styles.error}>{error}</Text>}
     </View>
   );
-};
+}
+
+interface TextareaProps extends TextInputProps {
+  label?: string;
+  error?: string;
+  containerStyle?: ViewStyle;
+  rows?: number;
+}
+
+export function Textarea({ label, error, containerStyle, rows = 4, style, ...props }: TextareaProps) {
+  return (
+    <View style={[styles.container, containerStyle]}>
+      {label && <Text style={styles.label}>{label}</Text>}
+      <TextInput
+        style={[
+          styles.input,
+          styles.textarea,
+          { minHeight: rows * 22 },
+          error && styles.inputError,
+          style as any,
+        ]}
+        placeholderTextColor={COLORS.mutedForeground}
+        selectionColor={COLORS.primary}
+        multiline
+        textAlignVertical="top"
+        {...props}
+      />
+      {error && <Text style={styles.error}>{error}</Text>}
+    </View>
+  );
+}
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 16,
-    width: "100%",
+    gap: SPACING.xs,
   },
   label: {
-    color: COLORS.foreground,
-    fontSize: 14,
-    fontWeight: "600",
-    marginBottom: 8,
+    fontFamily: FONTS.mono,
+    fontSize: 10,
+    color: COLORS.mutedForeground,
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
+    marginBottom: 4,
   },
   input: {
-    backgroundColor: COLORS.secondary,
-    borderColor: COLORS.border,
+    backgroundColor: COLORS.input,
     borderWidth: 1,
-    borderRadius: 12,
-    padding: 14,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS,
+    paddingHorizontal: SPACING.base,
+    paddingVertical: SPACING.sm,
+    height: 44,
     color: COLORS.foreground,
-    fontSize: 16,
+    fontFamily: FONTS.sans,
+    fontSize: 14,
+  },
+  inputMono: {
+    fontFamily: FONTS.mono,
+    fontSize: 12,
+  },
+  textarea: {
+    height: 'auto',
+    paddingTop: SPACING.md,
+    paddingBottom: SPACING.md,
   },
   inputError: {
     borderColor: COLORS.destructive,
   },
-  multiline: {
-    height: 100,
-    textAlignVertical: "top",
-  },
-  errorText: {
+  error: {
+    fontFamily: FONTS.mono,
+    fontSize: 10,
     color: COLORS.destructive,
-    fontSize: 12,
-    marginTop: 4,
+    marginTop: 2,
   },
 });

@@ -2,38 +2,29 @@
   "expo": {
     "name": "WorkSeal",
     "slug": "workseal",
+    "version": "2.0.0",
     "scheme": "workseal",
-    "version": "1.0.0",
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
-    "jsEngine": "jsc",
-    "splash": {
-      "backgroundColor": "#0f0f13",
-      "resizeMode": "contain"
-    },
-    "ios": {
-      "supportsTablet": true,
-      "bundleIdentifier": "com.workseal.mobile"
-    },
+    "backgroundColor": "#050810",
+    "platforms": ["ios", "android"],
     "android": {
-      "package": "com.workseal.mobile",
       "adaptiveIcon": {
-        "backgroundColor": "#0f0f13"
+        "backgroundColor": "#050810"
       },
       "intentFilters": [
         {
-          "action": "android.intent.action.VIEW",
-          "autoVerify": true,
-          "data": [
-            {
-              "scheme": "workseal"
-            }
-          ]
+          "action": "VIEW",
+          "data": [{ "scheme": "workseal" }],
+          "category": ["BROWSABLE", "DEFAULT"]
         }
       ]
     },
-    "web": {
-      "bundler": "metro"
+    "ios": {
+      "bundleIdentifier": "com.workseal.app",
+      "infoPlist": {
+        "LSApplicationQueriesSchemes": ["slush", "suiwallet"]
+      }
     },
     "plugins": [
       "expo-router",
