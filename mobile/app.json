@@ -7,29 +7,46 @@
     "orientation": "portrait",
     "userInterfaceStyle": "dark",
     "backgroundColor": "#050810",
-    "platforms": ["ios", "android"],
+    "platforms": [
+      "ios",
+      "android"
+    ],
     "android": {
+      "package": "com.workseal.app",
       "adaptiveIcon": {
         "backgroundColor": "#050810"
       },
       "intentFilters": [
         {
           "action": "VIEW",
-          "data": [{ "scheme": "workseal" }],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "data": [
+            {
+              "scheme": "workseal"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
     "ios": {
       "bundleIdentifier": "com.workseal.app",
       "infoPlist": {
-        "LSApplicationQueriesSchemes": ["slush", "suiwallet"]
+        "LSApplicationQueriesSchemes": [
+          "slush",
+          "suiwallet"
+        ]
       }
     },
     "plugins": [
       "expo-router",
-      "expo-secure-store"
+      "expo-secure-store",
+      "expo-web-browser",
+      "@react-native-google-signin/google-signin"
     ],
+    "newArchEnabled": true,
     "experiments": {
       "typedRoutes": true
     }

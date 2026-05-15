@@ -1,12 +1,12 @@
 /**
  * useWorkSealTx — transaction dispatch hook.
- * Builds PTBs and routes them to Slush Wallet for signing.
+ * Builds PTBs and routes them to Slush Wallet via WalletConnect for signing.
  * All tx builders are in lib/sui-tx.ts (1:1 with web).
  */
 
 import { Alert } from 'react-native';
 import { useWalletStore } from '@/lib/wallet-store';
-import { signAndExecuteViaSlush } from '@/lib/slush-wallet';
+import { signAndExecuteWithZkLogin } from '@/lib/zklogin';
 import {
   buildCreateContractTx,
   buildFundContractTx,
@@ -50,7 +50,7 @@ export const useWorkSealTx = () => {
   const dispatch = async (txBuilder: () => ReturnType<typeof buildCreateContractTx>) => {
     const addr = requireWallet();
     const tx = txBuilder();
-    await signAndExecuteViaSlush(tx, addr);
+    await signAndExecuteWithZkLogin(tx, addr);
   };
 
   return {
