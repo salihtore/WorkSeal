@@ -7,7 +7,7 @@ import React, { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
 import { Slot, router } from 'expo-router';
 import { useWalletStore } from '@/lib/wallet-store';
-import { useContracts } from '@/hooks/useContracts';
+import { useContracts } from '@/hooks/use-contracts';
 import TabBar from '@/components/TabBar';
 import { COLORS } from '@/constants/theme';
 

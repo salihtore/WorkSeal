@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { storage } from './storage';
+import { logoutZkLogin } from './zklogin';
 
 interface WalletState {
   address: string | null;
@@ -24,6 +25,7 @@ export const useWalletStore = create<WalletState>((set) => ({
 
   disconnect: async () => {
     await storage.clearWallet();
+    await logoutZkLogin();
     set({ address: null, isConnected: false, isLoading: false });
   },
 

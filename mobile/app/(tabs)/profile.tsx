@@ -23,7 +23,7 @@ import {
   LogOut,
 } from 'lucide-react-native';
 import { useWalletStore } from '@/lib/wallet-store';
-import { useContracts } from '@/hooks/useContracts';
+import { useContracts } from '@/hooks/use-contracts';
 import AppBackground from '@/components/AppBackground';
 import Input, { Textarea } from '@/components/ui/Input';
 import Button from '@/components/ui/Button';

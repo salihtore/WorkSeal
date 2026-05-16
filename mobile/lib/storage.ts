@@ -56,6 +56,7 @@ export const storage = {
     salt: string;
     sub: string;
     address: string;
+    addressSeed: string;
   }): Promise<void> {
     await SecureStore.setItemAsync('zkl_secret_key', session.secretKey);
     await SecureStore.setItemAsync('zkl_proof', session.proof);
@@ -63,6 +64,7 @@ export const storage = {
     await SecureStore.setItemAsync('zkl_salt', session.salt);
     await SecureStore.setItemAsync('zkl_sub', session.sub);
     await SecureStore.setItemAsync('zkl_address', session.address);
+    await SecureStore.setItemAsync('zkl_address_seed', session.addressSeed);
   },
 
   async loadZkLoginSession(): Promise<{
@@ -72,6 +74,7 @@ export const storage = {
     salt: string;
     sub: string;
     address: string;
+    addressSeed: string;
   } | null> {
     try {
       const secretKey = await SecureStore.getItemAsync('zkl_secret_key');
@@ -80,12 +83,13 @@ export const storage = {
       const salt = await SecureStore.getItemAsync('zkl_salt');
       const sub = await SecureStore.getItemAsync('zkl_sub');
       const address = await SecureStore.getItemAsync('zkl_address');
+      const addressSeed = await SecureStore.getItemAsync('zkl_address_seed');
 
-      if (!secretKey || !proof || !maxEpochStr || !salt || !sub || !address) {
+      if (!secretKey || !proof || !maxEpochStr || !salt || !sub || !address || !addressSeed) {
         return null;
       }
 
-      return { secretKey, proof, maxEpoch: Number(maxEpochStr), salt, sub, address };
+      return { secretKey, proof, maxEpoch: Number(maxEpochStr), salt, sub, address, addressSeed };
     } catch {
       return null;
     }
@@ -98,5 +102,6 @@ export const storage = {
     await SecureStore.deleteItemAsync('zkl_salt');
     await SecureStore.deleteItemAsync('zkl_sub');
     await SecureStore.deleteItemAsync('zkl_address');
+    await SecureStore.deleteItemAsync('zkl_address_seed');
   },
 };

@@ -97,6 +97,7 @@ export function useContracts(userAddress?: string | null) {
     fetchAllContracts();
   }, [fetchAllContracts]);
 
+  // Yardımcı filtreler (Görev 3 ve UI gereksinimleri)
   const getMyContracts = useCallback(() => {
     if (!userAddress) return [];
     const addr = userAddress.toLowerCase();

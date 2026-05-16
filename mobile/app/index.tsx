@@ -14,9 +14,16 @@ export default function IndexScreen() {
   const { isConnected, isLoading } = useWalletStore();
 
   useEffect(() => {
+    const timeout = setTimeout(() => {
+      router.replace('/login');
+    }, 3000);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  useEffect(() => {
     if (isLoading) return;
     if (isConnected) {
-      router.replace('/(app)/dashboard');
+      router.replace('/(tabs)/escrow');
     } else {
       router.replace('/login');
     }

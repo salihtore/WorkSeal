@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
-import { router, usePathname } from 'expo-router';
+import { Link, usePathname } from 'expo-router';
 import { COLORS, FONTS, SPACING } from '@/constants/theme';
 
 // Lucide icons for RN
@@ -15,21 +15,21 @@ import {
 
 interface TabItem {
   href: string;
+  path: string;
   label: string;
   Icon: React.ElementType;
 }
 
 const userTabs: TabItem[] = [
-  { href: '/(app)/dashboard', label: 'Dashboard', Icon: LayoutDashboard },
-  { href: '/(app)/explore', label: 'Keşfet', Icon: Search },
-  { href: '/(app)/contracts', label: 'Sözleşmeler', Icon: FileText },
-  { href: '/(app)/disputes', label: 'Anlaşmazlık', Icon: AlertTriangle },
-  { href: '/(app)/profile', label: 'Profil', Icon: User },
+  { href: '/(tabs)/escrow', path: '/escrow', label: 'Escrow', Icon: FileText },
+  { href: '/(tabs)/explore', path: '/explore', label: 'İlanlar', Icon: Search },
+  { href: '/(tabs)/disputes', path: '/disputes', label: 'Sorunlar', Icon: AlertTriangle },
+  { href: '/(tabs)/profile', path: '/profile', label: 'Profil', Icon: User },
 ];
 
 const arbitratorTabs: TabItem[] = [
-  { href: '/(app)/arbitrator', label: 'Yargı', Icon: Scale },
-  { href: '/(app)/profile', label: 'Profil', Icon: User },
+  { href: '/(tabs)/disputes', path: '/disputes', label: 'Yargı', Icon: Scale },
+  { href: '/(tabs)/profile', path: '/profile', label: 'Profil', Icon: User },
 ];
 
 interface TabBarProps {
@@ -43,25 +43,25 @@ export default function TabBar({ isArbitrator = false }: TabBarProps) {
   return (
     <View style={styles.container}>
       <View style={styles.bar}>
-        {tabs.map(({ href, label, Icon }) => {
-          const active = pathname === href || pathname.startsWith(href + '/');
+        {tabs.map(({ href, path, label, Icon }) => {
+          const active = pathname === path || pathname.startsWith(path + '/');
           return (
-            <TouchableOpacity
-              key={href}
-              style={styles.tab}
-              onPress={() => router.push(href as any)}
-              activeOpacity={0.7}
-            >
-              <Icon
-                size={20}
-                color={active ? COLORS.primary : COLORS.mutedForeground}
-                strokeWidth={active ? 2.5 : 1.5}
-              />
-              <Text style={[styles.label, active && styles.labelActive]}>
-                {label}
-              </Text>
-              {active && <View style={styles.indicator} />}
-            </TouchableOpacity>
+            <Link href={href as any} asChild replace key={href}>
+              <TouchableOpacity
+                style={styles.tab}
+                activeOpacity={0.7}
+              >
+                <Icon
+                  size={20}
+                  color={active ? COLORS.primary : COLORS.mutedForeground}
+                  strokeWidth={active ? 2.5 : 1.5}
+                />
+                <Text style={[styles.label, active && styles.labelActive]}>
+                  {label}
+                </Text>
+                {active && <View style={styles.indicator} />}
+              </TouchableOpacity>
+            </Link>
           );
         })}
       </View>
@@ -74,35 +74,37 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
-    paddingBottom: Platform.select({ ios: 28, android: 8 }) ?? 8,
+    paddingBottom: Platform.select({ ios: 34, android: 20 }) ?? 20,
   },
   bar: {
     flexDirection: 'row',
-    paddingTop: 8,
+    height: 56,
   },
   tab: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     gap: 4,
-    paddingTop: 4,
+    height: '100%',
     position: 'relative',
   },
   label: {
     fontFamily: FONTS.mono,
-    fontSize: 9,
+    fontSize: 10,
     color: COLORS.mutedForeground,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   labelActive: {
     color: COLORS.primary,
+    fontWeight: '700',
   },
   indicator: {
     position: 'absolute',
     top: 0,
     left: '20%',
     right: '20%',
-    height: 1,
+    height: 2,
     backgroundColor: COLORS.primary,
   },
 });
