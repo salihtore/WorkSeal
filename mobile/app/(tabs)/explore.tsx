@@ -43,17 +43,13 @@ export default function ExploreTabScreen() {
   }, [fetchAllContracts]);
 
   const handleTakeJob = async (contractId: string, title: string) => {
-    if (!address) {
-      Alert.alert('Giriş Gerekli', 'İşi üstlenebilmek için lütfen önce cüzdanınızı bağlayın.');
-      return;
-    }
     setTakingJobId(contractId);
     try {
       await takeJob(contractId);
-      Alert.alert('Tebrikler!', `"${title}" işini başarıyla üstlendiniz. Escrow kilitlendi, çalışmaya hemen başlayabilirsiniz.`);
+      Alert.alert('Slush acildi', `"${title}" isini Slush icindeki WorkSeal web dApp uzerinden onaylayabilirsin.`);
       fetchAllContracts();
     } catch (e: any) {
-      Alert.alert('İşlem Başarısız', e.message);
+      Alert.alert('Slush acilamadi', e.message);
     } finally {
       setTakingJobId(null);
     }
@@ -176,7 +172,7 @@ export default function ExploreTabScreen() {
                       {isTakingThis ? (
                         <ActivityIndicator color="#e8e8f0" size="small" />
                       ) : (
-                        <Text style={styles.takeBtnText}>İŞİ AL</Text>
+                        <Text style={styles.takeBtnText}>SLUSH ILE AL</Text>
                       )}
                     </TouchableOpacity>
                   </View>

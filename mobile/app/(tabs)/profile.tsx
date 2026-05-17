@@ -23,6 +23,7 @@ import {
   LogOut,
 } from 'lucide-react-native';
 import { useWalletStore } from '@/lib/wallet-store';
+import { openConnectInSlush } from '@/lib/slush-links';
 import { useContracts } from '@/hooks/use-contracts';
 import AppBackground from '@/components/AppBackground';
 import Input, { Textarea } from '@/components/ui/Input';
@@ -32,11 +33,12 @@ import { mistToSui, ContractStatus } from '@/types';
 import { COLORS, FONTS, SPACING } from '@/constants/theme';
 
 export default function ProfileScreen() {
-  const { address, disconnect } = useWalletStore();
+  const { address, disconnect, setAddress } = useWalletStore();
   const { contracts, loading, isArbitrator } = useContracts(address);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ name: '', bio: '', title: '' });
+  const [walletInput, setWalletInput] = useState(address ?? '');
 
   const completedAsFreelancer = contracts.filter(
     (c) => c.status === ContractStatus.Completed && c.freelancer === address
@@ -49,6 +51,12 @@ export default function ProfileScreen() {
 
   const handleDisconnect = async () => {
     await disconnect();
+  };
+
+  const handleSaveWalletAddress = async () => {
+    const normalized = walletInput.trim();
+    if (!/^0x[a-fA-F0-9]{64}$/.test(normalized)) return;
+    await setAddress(normalized);
   };
 
   return (
@@ -148,6 +156,21 @@ export default function ProfileScreen() {
                 <ExternalLink size={16} color={COLORS.mutedForeground} />
               </TouchableOpacity>
             )}
+          </View>
+
+          <View style={styles.slushActions}>
+            <Button onPress={openConnectInSlush} size="sm" fullWidth>
+              <ExternalLink size={14} color={COLORS.primaryForeground} />
+              {'  '}Slush'ta WorkSeal'i Ac
+            </Button>
+            <Input
+              value={walletInput}
+              onChangeText={setWalletInput}
+              placeholder="Slush public adresi (0x...)"
+            />
+            <Button onPress={handleSaveWalletAddress} variant="outline" size="sm" fullWidth>
+              Slush Adresini Kaydet
+            </Button>
           </View>
 
           {/* Stats */}
@@ -404,6 +427,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.foreground,
   },
+  slushActions: { width: '100%', gap: 10 },
   statsRow: {
     width: '100%',
     flexDirection: 'row',

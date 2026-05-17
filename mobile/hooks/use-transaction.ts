@@ -1,65 +1,52 @@
-import { useState, useCallback } from 'react';
-import { useWalletStore } from '@/lib/wallet-store';
-import { signAndExecuteWithZkLogin } from '@/lib/zklogin';
-import * as tx from '@/lib/sui-tx';
+import { useCallback, useState } from 'react';
+import { openContractActionInSlush, openNewContractInSlush } from '@/lib/slush-links';
 import { CreateContractInput } from '@/types';
 
+type PendingAction =
+  | 'create'
+  | 'fund'
+  | 'take'
+  | 'submit'
+  | 'reject'
+  | 'approve'
+  | 'dispute'
+  | 'cancel'
+  | 'message';
+
 export function useTransaction() {
-  const { address } = useWalletStore();
   const [isPending, setIsPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [txDigest, setTxDigest] = useState<string | null>(null);
+  const [txDigest] = useState<string | null>(null);
 
-  const createContract = useCallback(async (input: CreateContractInput): Promise<string> => {
-    if (!address) throw new Error('Giriş yapılmamış');
-    setIsPending(true);
-    setError(null);
-    try {
-      const transaction = tx.buildCreateContractTx({ ...input, senderAddress: address });
-      const digest = await signAndExecuteWithZkLogin(transaction, address);
-      setTxDigest(digest);
-      return digest;
-    } catch (e: any) {
-      setError(e.message || 'Sözleşme oluşturulurken bir hata oluştu.');
-      throw e;
-    } finally {
-      setIsPending(false);
-    }
-  }, [address]);
+  const openSlushAction = useCallback(
+    async (_actionName: PendingAction, fn: () => Promise<void>): Promise<string> => {
+      setIsPending(true);
+      setError(null);
+      try {
+        await fn();
+        return 'slush-redirect';
+      } catch (e: any) {
+        const message = e?.message || 'Slush Wallet acilamadi.';
+        setError(message);
+        throw new Error(message);
+      } finally {
+        setIsPending(false);
+      }
+    },
+    []
+  );
 
-  const fundContract = useCallback(async (contractId: string, amount: bigint): Promise<string> => {
-    if (!address) throw new Error('Giriş yapılmamış');
-    setIsPending(true);
-    setError(null);
-    try {
-      const transaction = tx.buildFundContractTx({ contractId, amount, senderAddress: address });
-      const digest = await signAndExecuteWithZkLogin(transaction, address);
-      setTxDigest(digest);
-      return digest;
-    } catch (e: any) {
-      setError(e.message || 'Sözleşme fonlanırken bir hata oluştu.');
-      throw e;
-    } finally {
-      setIsPending(false);
-    }
-  }, [address]);
+  const createContract = useCallback(async (_input?: CreateContractInput): Promise<string> => {
+    return openSlushAction('create', () => openNewContractInSlush());
+  }, [openSlushAction]);
+
+  const fundContract = useCallback(async (contractId: string, _amount?: bigint): Promise<string> => {
+    return openSlushAction('fund', () => openContractActionInSlush(contractId, 'fund'));
+  }, [openSlushAction]);
 
   const takeJob = useCallback(async (contractId: string): Promise<string> => {
-    if (!address) throw new Error('Giriş yapılmamış');
-    setIsPending(true);
-    setError(null);
-    try {
-      const transaction = tx.buildTakeJobTx({ contractId, senderAddress: address });
-      const digest = await signAndExecuteWithZkLogin(transaction, address);
-      setTxDigest(digest);
-      return digest;
-    } catch (e: any) {
-      setError(e.message || 'İş alınırken bir hata oluştu.');
-      throw e;
-    } finally {
-      setIsPending(false);
-    }
-  }, [address]);
+    return openSlushAction('take', () => openContractActionInSlush(contractId, 'take'));
+  }, [openSlushAction]);
 
   const submitMilestone = useCallback(async (
     contractId: string,
@@ -67,121 +54,46 @@ export function useTransaction() {
     proofLink: string,
     proofNotes: string
   ): Promise<string> => {
-    if (!address) throw new Error('Giriş yapılmamış');
-    setIsPending(true);
-    setError(null);
-    try {
-      const transaction = tx.buildSubmitMilestoneTx({
-        contractId,
-        milestoneIndex: index,
+    return openSlushAction('submit', () =>
+      openContractActionInSlush(contractId, 'submit', {
+        milestone: index,
         proofLink,
         proofNotes,
-        senderAddress: address,
-      });
-      const digest = await signAndExecuteWithZkLogin(transaction, address);
-      setTxDigest(digest);
-      return digest;
-    } catch (e: any) {
-      setError(e.message || 'Milestone teslim edilirken bir hata oluştu.');
-      throw e;
-    } finally {
-      setIsPending(false);
-    }
-  }, [address]);
+      })
+    );
+  }, [openSlushAction]);
 
-  const rejectMilestone = useCallback(async (contractId: string, index: number, reason: string): Promise<string> => {
-    if (!address) throw new Error('Giriş yapılmamış');
-    setIsPending(true);
-    setError(null);
-    try {
-      const transaction = tx.buildRejectMilestoneTx({
-        contractId,
-        milestoneIndex: index,
-        reason,
-        senderAddress: address,
-      });
-      const digest = await signAndExecuteWithZkLogin(transaction, address);
-      setTxDigest(digest);
-      return digest;
-    } catch (e: any) {
-      setError(e.message || 'Milestone reddedilirken bir hata oluştu.');
-      throw e;
-    } finally {
-      setIsPending(false);
-    }
-  }, [address]);
+  const rejectMilestone = useCallback(async (
+    contractId: string,
+    index: number,
+    reason: string
+  ): Promise<string> => {
+    return openSlushAction('reject', () =>
+      openContractActionInSlush(contractId, 'reject', { milestone: index, reason })
+    );
+  }, [openSlushAction]);
 
   const approveAndRelease = useCallback(async (contractId: string, index: number): Promise<string> => {
-    if (!address) throw new Error('Giriş yapılmamış');
-    setIsPending(true);
-    setError(null);
-    try {
-      const transaction = tx.buildApproveAndReleaseTx({
-        contractId,
-        milestoneIndex: index,
-        senderAddress: address,
-      });
-      const digest = await signAndExecuteWithZkLogin(transaction, address);
-      setTxDigest(digest);
-      return digest;
-    } catch (e: any) {
-      setError(e.message || 'Ödeme onaylanırken bir hata oluştu.');
-      throw e;
-    } finally {
-      setIsPending(false);
-    }
-  }, [address]);
+    return openSlushAction('approve', () =>
+      openContractActionInSlush(contractId, 'approve', { milestone: index })
+    );
+  }, [openSlushAction]);
 
   const raiseDispute = useCallback(async (contractId: string, reason: string): Promise<string> => {
-    if (!address) throw new Error('Giriş yapılmamış');
-    setIsPending(true);
-    setError(null);
-    try {
-      const transaction = tx.buildRaiseDisputeTx({ contractId, reason, senderAddress: address });
-      const digest = await signAndExecuteWithZkLogin(transaction, address);
-      setTxDigest(digest);
-      return digest;
-    } catch (e: any) {
-      setError(e.message || 'Anlaşmazlık başlatılırken bir hata oluştu.');
-      throw e;
-    } finally {
-      setIsPending(false);
-    }
-  }, [address]);
+    return openSlushAction('dispute', () =>
+      openContractActionInSlush(contractId, 'dispute', { reason })
+    );
+  }, [openSlushAction]);
 
   const cancelContract = useCallback(async (contractId: string): Promise<string> => {
-    if (!address) throw new Error('Giriş yapılmamış');
-    setIsPending(true);
-    setError(null);
-    try {
-      const transaction = tx.buildCancelContractTx({ contractId, senderAddress: address });
-      const digest = await signAndExecuteWithZkLogin(transaction, address);
-      setTxDigest(digest);
-      return digest;
-    } catch (e: any) {
-      setError(e.message || 'Sözleşme iptal edilirken bir hata oluştu.');
-      throw e;
-    } finally {
-      setIsPending(false);
-    }
-  }, [address]);
+    return openSlushAction('cancel', () => openContractActionInSlush(contractId, 'cancel'));
+  }, [openSlushAction]);
 
   const sendMessage = useCallback(async (contractId: string, content: string): Promise<string> => {
-    if (!address) throw new Error('Giriş yapılmamış');
-    setIsPending(true);
-    setError(null);
-    try {
-      const transaction = tx.buildSendMessageTx({ contractId, content, senderAddress: address });
-      const digest = await signAndExecuteWithZkLogin(transaction, address);
-      setTxDigest(digest);
-      return digest;
-    } catch (e: any) {
-      setError(e.message || 'Mesaj gönderilirken bir hata oluştu.');
-      throw e;
-    } finally {
-      setIsPending(false);
-    }
-  }, [address]);
+    return openSlushAction('message', () =>
+      openContractActionInSlush(contractId, 'message', { content })
+    );
+  }, [openSlushAction]);
 
   return {
     createContract,

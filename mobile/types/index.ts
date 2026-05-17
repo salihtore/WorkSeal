@@ -35,7 +35,7 @@ export interface WorkContract {
   id: string;            // Sui object ID
   title: string;
   description: string;
-  freelancer?: string;    // Sui wallet adresi
+  freelancer: string | null;    // Sui wallet adresi
   client: string;        // Sui wallet adresi
   total_budget: bigint;  // MIST cinsinden
   status: ContractStatus;
@@ -46,7 +46,7 @@ export interface WorkContract {
   messages: Message[];
   client_arbitrator_messages: Message[];
   freelancer_arbitrator_messages: Message[];
-  arbitrator?: string;
+  arbitrator: string | null;
 }
 
 export interface ArbitratorProfile {
@@ -215,7 +215,8 @@ export function suiToMist(sui: number): bigint {
   return BigInt(Math.floor(sui * Number(MIST_PER_SUI)));
 }
 
-export function formatAddress(address: string): string {
+export function formatAddress(address?: string | null): string {
+  if (!address) return 'Atanmadı';
   return `${address.slice(0, 6)}...${address.slice(-4)}`;
 }
 
@@ -226,6 +227,8 @@ export function formatTimestamp(ms: number): string {
     year: 'numeric',
   });
 }
+
+export const formatDate = formatTimestamp;
 
 export function formatTimestampFull(ms: number): string {
   return new Date(ms).toLocaleString('tr-TR', {
@@ -268,3 +271,5 @@ export function getStatusColor(status: ContractStatus): {
       return { bg: 'rgba(100,116,139,0.1)', text: '#64748B', border: 'rgba(100,116,139,0.2)' };
   }
 }
+
+export const getStatusColors = getStatusColor;

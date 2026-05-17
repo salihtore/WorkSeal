@@ -17,6 +17,10 @@ export const storage = {
     await SecureStore.setItemAsync(WALLET_CONNECTED_KEY, 'true');
   },
 
+  async setWalletConnected(): Promise<void> {
+    await SecureStore.setItemAsync(WALLET_CONNECTED_KEY, 'true');
+  },
+
   async clearWallet(): Promise<void> {
     await SecureStore.deleteItemAsync(WALLET_ADDRESS_KEY);
     await SecureStore.deleteItemAsync(WALLET_CONNECTED_KEY);

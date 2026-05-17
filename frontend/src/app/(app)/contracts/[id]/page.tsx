@@ -52,25 +52,39 @@ const formatTimestamp = (ts: number | string) => {
   return date.toLocaleString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 
-export default function ContractDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default function ContractDetailPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const resolvedParams = use(params);
+  const resolvedSearchParams = use(searchParams);
   const contractId = resolvedParams.id;
+  const requestedAction = typeof resolvedSearchParams.action === "string" ? resolvedSearchParams.action : null;
+  const requestedMilestone = typeof resolvedSearchParams.milestone === "string" ? Number(resolvedSearchParams.milestone) : null;
 
   const { contract, loading, error } = useContractDetails(contractId);
 
   const account = useCurrentAccount();
   const { submitMilestone, approveAndReleaseFunds, rejectMilestone, takeJob, sendMessage, fundContract, raiseDispute, resolveDispute, sendPrivateMessage, resumeContractArbitrator } = useWorkSealTransactions();
 
-  const [activeTab, setActiveTab] = useState<"details" | "chat">("details");
+  const [activeTab, setActiveTab] = useState<"details" | "chat">(requestedAction === "message" ? "chat" : "details");
   const [chatChannel, setChatChannel] = useState<"group" | "client_arb" | "freelancer_arb">("group");
-  const [chatInput, setChatInput] = useState("");
+  const [chatInput, setChatInput] = useState(typeof resolvedSearchParams.content === "string" ? resolvedSearchParams.content : "");
   const [isSendingMessage, setIsSendingMessage] = useState(false);
-  const [isProofOpen, setIsProofOpen] = useState(false);
-  const [proofForm, setProofForm] = useState({ link: "", notes: "" });
+  const [isProofOpen, setIsProofOpen] = useState(requestedAction === "submit");
+  const [proofForm, setProofForm] = useState({
+    link: typeof resolvedSearchParams.proofLink === "string" ? resolvedSearchParams.proofLink : "",
+    notes: typeof resolvedSearchParams.proofNotes === "string" ? resolvedSearchParams.proofNotes : "",
+  });
   const [isSubmittingProof, setIsSubmittingProof] = useState(false);
   const [isActionLoading, setIsActionLoading] = useState<number | null>(null);
-  const [isDisputeOpen, setIsDisputeOpen] = useState(false);
-  const [disputeReason, setDisputeReason] = useState("");
+  const [isDisputeOpen, setIsDisputeOpen] = useState(requestedAction === "dispute");
+  const [disputeReason, setDisputeReason] = useState(
+    typeof resolvedSearchParams.reason === "string" ? resolvedSearchParams.reason : ""
+  );
 
   const handleResolveDispute = async (winner: "client" | "freelancer") => {
     if (!contract) return;
@@ -264,6 +278,13 @@ export default function ContractDetailPage({ params }: { params: Promise<{ id: s
   return (
     <div className="min-h-screen bg-background">
       <div className="max-w-6xl mx-auto px-2 py-10 space-y-0">
+      {requestedAction && (
+        <div className="mb-6 border border-[#4FC3F7]/30 bg-[#4FC3F7]/5 px-5 py-4 text-xs font-mono text-[#4FC3F7] uppercase tracking-widest">
+          Mobile Slush aksiyonu hazir: {requestedAction}
+          {requestedMilestone !== null && !Number.isNaN(requestedMilestone) ? ` / milestone ${requestedMilestone + 1}` : ""}.
+          Cuzdan bagli degilse once Slush ile baglan, sonra ilgili onay butonunu kullan.
+        </div>
+      )}
       
       {/* ── Page Header ── */}
       <div className="pb-10 border-b border-border flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">

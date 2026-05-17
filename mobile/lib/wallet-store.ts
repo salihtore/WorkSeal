@@ -1,13 +1,14 @@
 import { create } from 'zustand';
 import { storage } from './storage';
-import { logoutZkLogin } from './zklogin';
 
 interface WalletState {
   address: string | null;
   isConnected: boolean;
   isLoading: boolean;
+  walletProvider: 'slush';
 
   // Actions
+  connectSlush: () => Promise<void>;
   setAddress: (address: string) => Promise<void>;
   disconnect: () => Promise<void>;
   loadFromStorage: () => Promise<void>;
@@ -17,15 +18,20 @@ export const useWalletStore = create<WalletState>((set) => ({
   address: null,
   isConnected: false,
   isLoading: true,
+  walletProvider: 'slush',
+
+  connectSlush: async () => {
+    await storage.setWalletConnected();
+    set({ isConnected: true, isLoading: false, walletProvider: 'slush' });
+  },
 
   setAddress: async (address: string) => {
     await storage.setWalletAddress(address);
-    set({ address, isConnected: true, isLoading: false });
+    set({ address, isConnected: true, isLoading: false, walletProvider: 'slush' });
   },
 
   disconnect: async () => {
     await storage.clearWallet();
-    await logoutZkLogin();
     set({ address: null, isConnected: false, isLoading: false });
   },
 

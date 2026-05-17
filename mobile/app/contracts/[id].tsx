@@ -117,10 +117,10 @@ export default function ContractDetailScreen() {
   const handleFund = async () => {
     try {
       await fundContract(contract.id, contract.total_budget);
-      Alert.alert('Başarılı', 'Sözleşme fonlandı ve aktif duruma geçti!');
+      Alert.alert('Slush acildi', 'Fonlama islemini Slush icindeki WorkSeal web dApp uzerinden onaylayabilirsin.');
       fetchAllContracts();
     } catch (e: any) {
-      Alert.alert('Fonlama Başarısız', e.message);
+      Alert.alert('Slush acilamadi', e.message);
     }
   };
 
@@ -133,7 +133,7 @@ export default function ContractDetailScreen() {
         onPress: async () => {
           try {
             await cancelContract(contract.id);
-            Alert.alert('İptal Edildi', 'Sözleşme başarıyla iptal edildi.');
+            Alert.alert('Slush acildi', 'Iptal islemini Slush onay ekraninda tamamlayabilirsin.');
             fetchAllContracts();
           } catch (e: any) {
             Alert.alert('Hata', e.message);
@@ -146,7 +146,7 @@ export default function ContractDetailScreen() {
   const handleTakeJob = async () => {
     try {
       await takeJob(contract.id);
-      Alert.alert('Tebrikler!', 'İşi başarıyla üstlendiniz. Sözleşme aktif duruma geçti.');
+      Alert.alert('Slush acildi', 'Isi Slush icindeki WorkSeal web dApp uzerinden onaylayabilirsin.');
       fetchAllContracts();
     } catch (e: any) {
       Alert.alert('Hata', e.message);
@@ -160,7 +160,7 @@ export default function ContractDetailScreen() {
     }
     try {
       await submitMilestone(contract.id, index, proofLink, proofNotes);
-      Alert.alert('Teslim Edildi', `${index + 1}. aşama işveren onayına sunuldu.`);
+      Alert.alert('Slush acildi', `${index + 1}. asama teslimini Slush icinde onaylayabilirsin.`);
       setActiveSubmitIndex(null);
       setProofLink('');
       setProofNotes('');
@@ -178,7 +178,7 @@ export default function ContractDetailScreen() {
         onPress: async () => {
           try {
             await approveAndRelease(contract.id, index);
-            Alert.alert('Ödeme Başarılı', 'Freelancer ödemesi başarıyla cüzdanına gönderildi.');
+            Alert.alert('Slush acildi', 'Odeme serbest birakma islemini Slush icinde onaylayabilirsin.');
             fetchAllContracts();
           } catch (e: any) {
             Alert.alert('Hata', e.message);
@@ -195,7 +195,7 @@ export default function ContractDetailScreen() {
     }
     try {
       await rejectMilestone(contract.id, index, rejectReason);
-      Alert.alert('Reddedildi', 'Revizyon talebi freelancer cüzdanına iletildi.');
+      Alert.alert('Slush acildi', 'Revizyon talebini Slush icinde onaylayabilirsin.');
       setActiveRejectIndex(null);
       setRejectReason('');
       fetchAllContracts();
@@ -211,7 +211,7 @@ export default function ContractDetailScreen() {
     }
     try {
       await raiseDispute(contract.id, disputeReasonText);
-      Alert.alert('Anlaşmazlık Başlatıldı', 'Sözleşme kilitlendi ve hakem incelemesine alındı.');
+      Alert.alert('Slush acildi', 'Anlasmazlik islemini Slush icinde onaylayabilirsin.');
       setShowDisputeForm(false);
       setDisputeReasonText('');
       fetchAllContracts();
@@ -224,6 +224,7 @@ export default function ContractDetailScreen() {
     if (!msgContent.trim()) return;
     try {
       await sendMessage(contract.id, msgContent);
+      Alert.alert('Slush acildi', 'Mesaji Slush icindeki WorkSeal web dApp uzerinden onaylayabilirsin.');
       setMsgContent('');
       fetchAllContracts();
     } catch (e: any) {
@@ -275,7 +276,7 @@ export default function ContractDetailScreen() {
                   onPress={handleFund}
                   disabled={isPending}
                 >
-                  {isPending ? <ActivityIndicator color="#e8e8f0" size="small" /> : <Text style={styles.btnPrimaryText}>ESCROW YÜKLE</Text>}
+                  {isPending ? <ActivityIndicator color="#e8e8f0" size="small" /> : <Text style={styles.btnPrimaryText}>SLUSH ILE FONLA</Text>}
                 </TouchableOpacity>
 
                 {contract.freelancer === null && (
@@ -301,7 +302,7 @@ export default function ContractDetailScreen() {
                 onPress={handleTakeJob}
                 disabled={isPending}
               >
-                {isPending ? <ActivityIndicator color="#e8e8f0" size="small" /> : <Text style={styles.btnPrimaryText}>İŞİ AL</Text>}
+                {isPending ? <ActivityIndicator color="#e8e8f0" size="small" /> : <Text style={styles.btnPrimaryText}>SLUSH ILE AL</Text>}
               </TouchableOpacity>
             </View>
           )}
@@ -409,7 +410,7 @@ export default function ContractDetailScreen() {
                             onPress={() => handleSubmitMilestone(index)}
                             disabled={isPending}
                           >
-                            {isPending ? <ActivityIndicator color="#e8e8f0" size="small" /> : <Text style={styles.btnPrimaryText}>GÖNDER</Text>}
+                            {isPending ? <ActivityIndicator color="#e8e8f0" size="small" /> : <Text style={styles.btnPrimaryText}>SLUSH ILE GONDER</Text>}
                           </TouchableOpacity>
                         </View>
                       )}
@@ -426,7 +427,7 @@ export default function ContractDetailScreen() {
                           disabled={isPending}
                         >
                           <CheckCircle size={16} color="#e8e8f0" />
-                          <Text style={styles.btnSuccessText}>ONAYLA VE ÖDE</Text>
+                          <Text style={styles.btnSuccessText}>SLUSH ILE ODE</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
@@ -452,7 +453,7 @@ export default function ContractDetailScreen() {
                             onPress={() => handleRejectMilestone(index)}
                             disabled={isPending}
                           >
-                            {isPending ? <ActivityIndicator color="#e8e8f0" size="small" /> : <Text style={styles.btnDestructiveText}>REDDET VE REVİZE İSTE</Text>}
+                            {isPending ? <ActivityIndicator color="#e8e8f0" size="small" /> : <Text style={styles.btnDestructiveText}>SLUSH ILE REVIZE ISTE</Text>}
                           </TouchableOpacity>
                         </View>
                       )}
@@ -519,7 +520,7 @@ export default function ContractDetailScreen() {
                   disabled={isPending}
                 >
                   <AlertTriangle size={18} color="#ff4d6d" />
-                  <Text style={styles.btnDestructiveOutlineText}>ANLAŞMAZLIK BAŞLAT</Text>
+                  <Text style={styles.btnDestructiveOutlineText}>SLUSH ILE ANLASMAZLIK</Text>
                 </TouchableOpacity>
               ) : (
                 <View style={styles.disputeBox}>

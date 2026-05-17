@@ -101,11 +101,6 @@ export default function NewContractScreen() {
   };
 
   const handleSubmit = async () => {
-    if (!address) {
-      Alert.alert('Bağlantı Hatası', 'Lütfen önce Google ZkLogin ile oturum açın.');
-      return;
-    }
-
     const days = parseInt(deadlineDays, 10);
     const deadline_ms = Date.now() + days * 86400000;
     const milestone_titles = milestones.map((m) => m.title);
@@ -115,18 +110,18 @@ export default function NewContractScreen() {
       await createContract({
         title,
         description,
-        client: address,
+        client: address || '0x0000000000000000000000000000000000000000000000000000000000000000',
         deadline_ms,
         milestone_titles,
         milestone_amounts,
       });
 
-      Alert.alert('Tebrikler!', 'Sözleşmeniz ZkLogin ile imzalanarak Sui Blockchain ağına başarıyla kaydedildi.', [
-        { text: 'Tamam', onPress: () => router.back() },
+      Alert.alert('Slush acildi', 'Sozlesmeyi Slush icindeki WorkSeal web dApp uzerinden imzalayip gonderebilirsin.', [
+        { text: 'Tamam' },
       ]);
     } catch (err: any) {
-      console.error('[NewContract] İşlem Hatası:', err);
-      Alert.alert('İşlem Başarısız', err.message || 'Sözleşme oluşturulurken hata oluştu.');
+      console.error('[NewContract] Slush redirect error:', err);
+      Alert.alert('Slush acilamadi', err.message || 'Sozlesme olusturma ekrani Slush icinde acilamadi.');
     }
   };
 
@@ -393,7 +388,7 @@ export default function NewContractScreen() {
               <View style={styles.alertBox}>
                 <AlertCircle size={20} color="#6c63ff" />
                 <Text style={styles.alertBoxText}>
-                  Sözleşmeyi gönderdiğinde ZkLogin oturumun ile imza atman gerekecektir. Sözleşme blockchain'e kaydedildikten sonra müşteri tarafından fonlanması beklenecektir.
+                  Sozlesmeyi Slush Wallet icindeki WorkSeal web dApp uzerinden imzalayacaksin. Gas ve fonlar Slush hesabindan yonetilir.
                 </Text>
               </View>
             </View>
@@ -425,7 +420,7 @@ export default function NewContractScreen() {
                   <ActivityIndicator color="#ffffff" size="small" />
                 ) : (
                   <>
-                    <Text style={styles.submitBtnFinalText}>Sözleşmeyi İmzala & Gönder</Text>
+                    <Text style={styles.submitBtnFinalText}>Slush ile Imzala</Text>
                     <CheckCircle2 size={18} color="#ffffff" />
                   </>
                 )}

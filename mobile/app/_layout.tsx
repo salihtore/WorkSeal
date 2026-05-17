@@ -1,20 +1,14 @@
-/**
- * Root Layout — app/_layout.tsx
- * Polyfill'ler index.js entry point'te çalıştırılıyor.
- */
-
 import 'fast-text-encoding';
 import React, { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View, StyleSheet } from 'react-native';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import * as SplashScreen from 'expo-splash-screen';
 
 import { useWalletStore } from '@/lib/wallet-store';
-import { restoreZkLoginSession } from '@/lib/zklogin';
 import { testSuiConnection } from '@/lib/sui-client';
 import { COLORS } from '@/constants/theme';
-import * as SplashScreen from 'expo-splash-screen';
 
 SplashScreen.preventAutoHideAsync().catch(() => {});
 
@@ -23,32 +17,25 @@ const queryClient = new QueryClient({
 });
 
 function RootLayoutInner() {
-  const { loadFromStorage, setAddress, disconnect } = useWalletStore();
+  const { loadFromStorage } = useWalletStore();
 
   useEffect(() => {
     (async () => {
       const ok = await testSuiConnection();
       if (!ok) {
-        console.error('[Layout] Sui RPC erişilemiyor!');
+        console.error('[Layout] Sui RPC is not reachable.');
       }
 
       try {
         await loadFromStorage();
-        const address = await restoreZkLoginSession();
-        if (address) {
-          await setAddress(address);
-        } else {
-          await disconnect();
-        }
       } catch (e) {
-        console.warn('[Layout] Session restore başarısız:', e);
-        await disconnect();
+        console.warn('[Layout] Wallet state restore failed:', e);
       } finally {
         useWalletStore.setState({ isLoading: false });
         await SplashScreen.hideAsync().catch(() => {});
       }
     })();
-  }, []);
+  }, [loadFromStorage]);
 
   return (
     <View style={styles.root}>

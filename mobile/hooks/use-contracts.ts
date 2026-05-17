@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
+import { AppState } from 'react-native';
 import { suiClient } from '@/lib/sui-client';
 import { WORKSEAL_PACKAGE_ID, WORKSEAL_MODULE, ARBITRATOR_REGISTRY_ID } from '@/constants/config';
 import { WorkContract, ContractStatus } from '@/types';
@@ -95,6 +96,16 @@ export function useContracts(userAddress?: string | null) {
 
   useEffect(() => {
     fetchAllContracts();
+  }, [fetchAllContracts]);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        fetchAllContracts();
+      }
+    });
+
+    return () => subscription.remove();
   }, [fetchAllContracts]);
 
   // Yardımcı filtreler (Görev 3 ve UI gereksinimleri)

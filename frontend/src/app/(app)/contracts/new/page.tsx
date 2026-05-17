@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, use } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -39,7 +39,13 @@ const contractSchema = z.object({
 
 type ContractFormValues = z.infer<typeof contractSchema>;
 
-export default function NewContractPage() {
+export default function NewContractPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const resolvedSearchParams = use(searchParams);
+  const openedFromMobile = resolvedSearchParams.source === "mobile-slush";
   const [step, setStep] = useState(0);
   
   // EKLENEN: Yüklenme Durumu (Loading State) ve Sui Hook'ları
@@ -139,6 +145,12 @@ export default function NewContractPage() {
         <h1 className="text-3xl font-bold tracking-tight text-foreground">Yeni Sözleşme</h1>
         <p className="text-sm text-muted-foreground mt-1">İş güvenceni blockchain üzerinde adım adım inşa et.</p>
       </div>
+
+      {openedFromMobile && (
+        <div className="mb-6 border border-[#4FC3F7]/30 bg-[#4FC3F7]/5 px-5 py-4 text-xs font-mono text-[#4FC3F7] uppercase tracking-widest">
+          Slush mobile akisi: bu formu Slush hesabinla doldurup son adimda wallet onayini ver.
+        </div>
+      )}
 
       {/* Adım göstergesi */}
       <div className="flex items-center gap-2 mb-8 flex-wrap">
