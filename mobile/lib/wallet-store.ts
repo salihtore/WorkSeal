@@ -39,8 +39,8 @@ export const useWalletStore = create<WalletState>((set) => ({
     try {
       const address = await storage.getWalletAddress();
       const connected = await storage.isConnected();
-      if (address && connected) {
-        set({ address, isConnected: true, isLoading: false });
+      if (connected) {
+        set({ address, isConnected: true, isLoading: false, walletProvider: 'slush' });
       } else {
         set({ address: null, isConnected: false, isLoading: false });
       }

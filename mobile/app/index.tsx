@@ -51,6 +51,7 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    zIndex: 1,
   },
   logo: {
     fontFamily: FONTS.sans,

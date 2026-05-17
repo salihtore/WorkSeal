@@ -8,7 +8,7 @@ export const suiClient = new SuiClient({
 export async function testSuiConnection(): Promise<boolean> {
   try {
     const state = await suiClient.getLatestSuiSystemState();
-    console.error('[SuiClient] Bağlantı OK, epoch:', state.epoch);
+    console.log('[SuiClient] Connection OK, epoch:', state.epoch);
     return true;
   } catch (e) {
     console.error('[SuiClient] Bağlantı HATASI:', e);
