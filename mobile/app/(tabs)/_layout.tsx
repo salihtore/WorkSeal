@@ -5,22 +5,29 @@
 
 import React, { useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { Slot, router } from 'expo-router';
+import { Slot, router, useRootNavigationState } from 'expo-router';
 import { useWalletStore } from '@/lib/wallet-store';
 import { useContracts } from '@/hooks/use-contracts';
 import TabBar from '@/components/TabBar';
 import { COLORS } from '@/constants/theme';
 
 export default function AppLayout() {
+  const rootNavigationState = useRootNavigationState();
   const { address, isConnected, isLoading } = useWalletStore();
   const { isArbitrator } = useContracts(address);
 
   // Auth guard
   useEffect(() => {
-    if (!isLoading && !isConnected) {
-      router.replace('/login');
-    }
-  }, [isConnected, isLoading]);
+    if (!rootNavigationState?.key || isLoading) return;
+
+    const timer = setTimeout(() => {
+      if (!isConnected) {
+        router.replace('/login');
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [isConnected, isLoading, rootNavigationState?.key]);
 
   // Arbitrator guard — redirect if arbitrator visits dashboard
   useEffect(() => {

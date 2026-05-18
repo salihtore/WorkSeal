@@ -5,7 +5,7 @@ import {
 } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import * as Linking from 'expo-linking';
-import { router } from 'expo-router';
+import { router, useRootNavigationState } from 'expo-router';
 import { Shield, Zap, FileText, Lock } from 'lucide-react-native';
 
 import AppBackground from '@/components/AppBackground';
@@ -29,6 +29,7 @@ const features = [
 ];
 
 export default function LoginScreen() {
+  const rootNavigationState = useRootNavigationState();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [nonce, setNonce] = useState<string>('');
@@ -36,10 +37,16 @@ export default function LoginScreen() {
   const { setAddress, isConnected } = useWalletStore();
 
   useEffect(() => {
-    if (isConnected) {
-      router.replace('/(tabs)/escrow');
-    }
-  }, [isConnected]);
+    if (!rootNavigationState?.key) return;
+
+    const timer = setTimeout(() => {
+      if (isConnected) {
+        router.replace('/(tabs)/escrow');
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [isConnected, rootNavigationState?.key]);
 
   useEffect(() => {
     if (preparedRef.current) return;
@@ -106,6 +113,7 @@ export default function LoginScreen() {
 
   return (
     <View style={styles.container}>
+      <AppBackground />
       <ScrollView
         style={[styles.scroll, { zIndex: 10 }]}
         contentContainerStyle={styles.content}
@@ -245,7 +253,7 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#10b981',
+    backgroundColor: COLORS.emerald,
   },
   liveText: {
     fontFamily: FONTS.mono,

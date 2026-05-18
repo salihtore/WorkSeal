@@ -7,7 +7,7 @@ export const CLOCK_OBJECT_ID = '0x6';
 export const ARBITRATOR_REGISTRY_ID = '0x9871edff64acc2ae51fe5f637a15c5051ad1921c2cfeb86efb9007ced3421dd8';
 
 export const NETWORK = 'testnet';
-export const SUI_FULLNODE_URL = 'https://fullnode.testnet.sui.io:443';
+export const SUI_FULLNODE_URL = 'https://fullnode.testnet.sui.io';
 
 // Slush Wallet deep link scheme
 export const SLUSH_SCHEME = 'slush';

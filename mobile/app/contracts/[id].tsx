@@ -36,10 +36,11 @@ import {
   Milestone,
   mistToSui,
   getStatusLabel,
-  getStatusColors,
+  getStatusColor,
   formatAddress,
-  formatDate,
+  formatTimestamp,
 } from '@/types';
+import { COLORS, FONTS } from '@/constants/theme';
 
 export default function ContractDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -98,7 +99,7 @@ export default function ContractDetailScreen() {
         <AppBackground />
         <AlertTriangle size={48} color="#ff4d6d" />
         <Text style={styles.errorTitle}>Sözleşme Bulunamadı</Text>
-        <Text style={styles.errorSub}>{error || 'Bu sözleşmeye erişim izniniz yok veya sözleşme silinmiş.'}</Text>
+        <Text style={styles.errorSub}>{error || 'Bu akıllı sözleşmeye erişim yetkiniz bulunmuyor veya on-chain kayıt bulunamadı.'}</Text>
         <TouchableOpacity style={styles.backBtnBox} onPress={() => router.back()}>
           <Text style={styles.backBtnText}>Geri Dön</Text>
         </TouchableOpacity>
@@ -108,10 +109,10 @@ export default function ContractDetailScreen() {
 
   const userAddr = address?.toLowerCase() || '';
   const isClient = userAddr === contract.client.toLowerCase();
-  const isFreelancer = contract.freelancer !== null && userAddr === contract.freelancer.toLowerCase();
-  const isArbitrator = contract.arbitrator !== null && userAddr === contract.arbitrator.toLowerCase();
+  const isFreelancer = !!contract.freelancer && userAddr === contract.freelancer.toLowerCase();
+  const isArbitrator = !!contract.arbitrator && userAddr === contract.arbitrator.toLowerCase();
 
-  const statusColors = getStatusColors(contract.status);
+  const statusColors = getStatusColor(contract.status);
   const statusLabel = getStatusLabel(contract.status);
 
   const handleFund = async () => {
@@ -294,8 +295,8 @@ export default function ContractDetailScreen() {
           {/* Bölüm 4: İş Al Butonu */}
           {contract.freelancer === null && contract.status === ContractStatus.Active && !isClient && (
             <View style={styles.takeJobCard}>
-              <Text style={styles.takeJobTitle}>Bu İlan Açık (Freelancer Aranıyor)</Text>
-              <Text style={styles.takeJobDesc}>Bütçe kilitlenmiş durumda. İşi üstlenerek çalışmaya hemen başlayabilirsiniz.</Text>
+              <Text style={styles.takeJobTitle}>Bu Akıllı Sözleşme Uzman Bekliyor (Açık İlan)</Text>
+              <Text style={styles.takeJobDesc}>Proje bütçesi Escrow havuzunda güvenceye alınmıştır. İşi üstlenerek on-chain teslimat sürecini hemen başlatabilirsiniz.</Text>
               <TouchableOpacity
                 style={[styles.btnPrimary, { marginTop: 12 }, isPending && styles.btnDisabled]}
                 onPress={handleTakeJob}
@@ -322,13 +323,13 @@ export default function ContractDetailScreen() {
                 <Text style={styles.partyLabel}>FREELANCER</Text>
                 <View style={styles.partyRow}>
                   <Text style={styles.partyValue}>
-                    {contract.freelancer === null ? 'Atanmadı (Açık İlan)' : formatAddress(contract.freelancer)}
+                    {contract.freelancer ? formatAddress(contract.freelancer) : 'Atanmadı (Açık İlan)'}
                   </Text>
                   {isFreelancer && <View style={styles.meBadge}><Text style={styles.meBadgeText}>Sen</Text></View>}
                 </View>
               </View>
 
-              {contract.arbitrator !== null && (
+              {!!contract.arbitrator && (
                 <View style={[styles.partyItem, { width: '100%' }]}>
                   <Text style={styles.partyLabel}>ATANAN HAKEM</Text>
                   <Text style={styles.partyValue}>{formatAddress(contract.arbitrator)}</Text>
@@ -337,7 +338,7 @@ export default function ContractDetailScreen() {
 
               <View style={[styles.partyItem, { width: '100%' }]}>
                 <Text style={styles.partyLabel}>SON TESLİM TARİHİ</Text>
-                <Text style={styles.partyValue}>{formatDate(contract.deadline)}</Text>
+                <Text style={styles.partyValue}>{formatTimestamp(contract.deadline)}</Text>
               </View>
             </View>
           </View>
@@ -528,7 +529,7 @@ export default function ContractDetailScreen() {
                     style={[styles.input, { height: 80, textAlignVertical: 'top' }]}
                     value={disputeReasonText}
                     onChangeText={setDisputeReasonText}
-                    placeholder="Lütfen sorunu ve hakemden beklentinizi detaylıca açıklayın..."
+                    placeholder="Lütfen uyuşmazlık nedenini, teslimat eksikliklerini ve hakem heyetinden talebinizi detaylıca belirtin..."
                     placeholderTextColor="#6b6b85"
                     multiline
                   />
@@ -556,9 +557,9 @@ export default function ContractDetailScreen() {
           {contract.status === ContractStatus.Disputed && (
             <View style={styles.disputeActiveCard}>
               <AlertTriangle size={28} color="#ffbf24" />
-              <Text style={styles.disputeActiveTitle}>Hakem İnceleme Sürecinde</Text>
+              <Text style={styles.disputeActiveTitle}>On-Chain Hakem Heyeti İncelemesinde</Text>
               <Text style={styles.disputeActiveDesc}>
-                Bu sözleşme anlaşmazlık nedeniyle kilitlenmiştir. Atanan hakem her iki tarafın kanıtlarını inceleyerek nihai kararı verecektir.
+                Bu akıllı sözleşme uyuşmazlık protokolü gereği kilitlenmiştir. Atanan bağımsız hakem, tarafların sunduğu kriptografik kanıtları ve teslimat geçmişini inceleyerek nihai kararı on-chain olarak verecektir.
               </Text>
             </View>
           )}
@@ -569,13 +570,13 @@ export default function ContractDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f0f13' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 16, padding: 32 },
-  loadingText: { fontSize: 16, fontWeight: '600', color: '#e8e8f0' },
-  errorTitle: { fontSize: 24, fontWeight: '800', color: '#ff4d6d' },
-  errorSub: { fontSize: 14, color: '#6b6b85', textAlign: 'center', lineHeight: 20 },
-  backBtnBox: { paddingHorizontal: 24, paddingVertical: 12, backgroundColor: '#2a2a38', borderRadius: 8 },
-  backBtnText: { fontSize: 14, fontWeight: '700', color: '#e8e8f0' },
+  loadingText: { fontFamily: FONTS.sans, fontSize: 16, fontWeight: '600', color: COLORS.foreground },
+  errorTitle: { fontFamily: FONTS.sans, fontSize: 24, fontWeight: '900', color: COLORS.red },
+  errorSub: { fontFamily: FONTS.sans, fontSize: 14, color: COLORS.mutedForeground, textAlign: 'center', lineHeight: 20 },
+  backBtnBox: { paddingHorizontal: 24, paddingVertical: 12, backgroundColor: COLORS.card, borderRadius: 0, borderWidth: 1, borderColor: COLORS.border },
+  backBtnText: { fontFamily: FONTS.mono, fontSize: 14, fontWeight: '700', color: COLORS.foreground },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -583,109 +584,110 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2a2a38',
+    borderBottomColor: COLORS.border,
   },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  backText: { fontSize: 15, fontWeight: '600', color: '#e8e8f0' },
-  statusBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, borderWidth: 1 },
-  statusBadgeText: { fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
+  backText: { fontFamily: FONTS.sans, fontSize: 15, fontWeight: '700', color: COLORS.foreground },
+  statusBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 0, borderWidth: 1 },
+  statusBadgeText: { fontFamily: FONTS.mono, fontSize: 12, fontWeight: '900', textTransform: 'uppercase' },
   scroll: { flex: 1 },
-  scrollContent: { paddingBottom: 60 },
+  scrollContent: { paddingBottom: 80 },
   section: { paddingHorizontal: 20, paddingTop: 24, gap: 12 },
-  title: { fontSize: 24, fontWeight: '800', color: '#e8e8f0', lineHeight: 30 },
-  description: { fontSize: 14, color: '#6b6b85', lineHeight: 22 },
+  title: { fontFamily: FONTS.sans, fontSize: 24, fontWeight: '900', color: COLORS.foreground, lineHeight: 30, letterSpacing: -0.5 },
+  description: { fontFamily: FONTS.sans, fontSize: 14, color: COLORS.mutedForeground, lineHeight: 22 },
   escrowCard: {
     marginHorizontal: 20,
     marginTop: 20,
-    backgroundColor: '#1a1a24',
+    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: '#2a2a38',
-    borderRadius: 16,
+    borderColor: COLORS.border,
+    borderRadius: 0,
     padding: 20,
     gap: 20,
   },
   escrowTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   escrowLeft: { gap: 4 },
-  escrowLabel: { fontSize: 11, fontWeight: '700', color: '#6b6b85', letterSpacing: 1 },
-  escrowAmount: { fontSize: 28, fontWeight: '900', color: '#6c63ff' },
+  escrowLabel: { fontFamily: FONTS.mono, fontSize: 11, fontWeight: '700', color: COLORS.mutedForeground, letterSpacing: 1 },
+  escrowAmount: { fontFamily: FONTS.mono, fontSize: 28, fontWeight: '900', color: COLORS.primary },
   actionRow: { flexDirection: 'row', gap: 12 },
   btnPrimary: {
     flex: 1,
     height: 50,
-    backgroundColor: '#6c63ff',
-    borderRadius: 12,
+    backgroundColor: COLORS.primary,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  btnPrimaryText: { fontSize: 15, fontWeight: '700', color: '#e8e8f0' },
+  btnPrimaryText: { fontFamily: FONTS.mono, fontSize: 14, fontWeight: '800', color: COLORS.primaryForeground, letterSpacing: 0.5 },
   btnDestructiveOutline: {
     height: 50,
     borderWidth: 1,
-    borderColor: '#ff4d6d',
-    borderRadius: 12,
+    borderColor: COLORS.red,
+    borderRadius: 0,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 20,
+    backgroundColor: COLORS.redBg,
   },
-  btnDestructiveOutlineText: { fontSize: 15, fontWeight: '700', color: '#ff4d6d' },
+  btnDestructiveOutlineText: { fontFamily: FONTS.mono, fontSize: 14, fontWeight: '800', color: COLORS.red, letterSpacing: 0.5 },
   btnDisabled: { opacity: 0.5 },
   takeJobCard: {
     marginHorizontal: 20,
     marginTop: 20,
-    backgroundColor: 'rgba(108,99,255,0.15)',
+    backgroundColor: COLORS.blueBg,
     borderWidth: 1,
-    borderColor: '#6c63ff',
-    borderRadius: 16,
+    borderColor: COLORS.primary,
+    borderRadius: 0,
     padding: 20,
   },
-  takeJobTitle: { fontSize: 18, fontWeight: '800', color: '#6c63ff', marginBottom: 6 },
-  takeJobDesc: { fontSize: 13, color: '#e8e8f0', lineHeight: 20 },
-  sectionTitle: { fontSize: 12, fontWeight: '700', color: '#6b6b85', letterSpacing: 1.5 },
-  partiesGrid: { flexDirection: 'row', flexWrap: 'wrap', borderWidth: 1, borderColor: '#2a2a38', borderRadius: 12, overflow: 'hidden' },
-  partyItem: { width: '50%', padding: 16, backgroundColor: '#1a1a24', borderWidth: 0.5, borderColor: '#2a2a38', gap: 6 },
-  partyLabel: { fontSize: 10, fontWeight: '700', color: '#6b6b85', letterSpacing: 1 },
+  takeJobTitle: { fontFamily: FONTS.sans, fontSize: 18, fontWeight: '900', color: COLORS.primary, marginBottom: 6 },
+  takeJobDesc: { fontFamily: FONTS.sans, fontSize: 13, color: COLORS.foreground, lineHeight: 20 },
+  sectionTitle: { fontFamily: FONTS.mono, fontSize: 12, fontWeight: '700', color: COLORS.mutedForeground, letterSpacing: 1.5 },
+  partiesGrid: { flexDirection: 'row', flexWrap: 'wrap', borderWidth: 1, borderColor: COLORS.border, borderRadius: 0, overflow: 'hidden' },
+  partyItem: { width: '50%', padding: 16, backgroundColor: COLORS.card, borderWidth: 0.5, borderColor: COLORS.border, gap: 6 },
+  partyLabel: { fontFamily: FONTS.mono, fontSize: 10, fontWeight: '700', color: COLORS.mutedForeground, letterSpacing: 1 },
   partyRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  partyValue: { fontSize: 13, fontWeight: '700', color: '#e8e8f0' },
-  meBadge: { backgroundColor: 'rgba(74,222,128,0.2)', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 },
-  meBadgeText: { fontSize: 10, fontWeight: '700', color: '#4ade80' },
-  milestoneCard: { backgroundColor: '#1a1a24', borderWidth: 1, borderColor: '#2a2a38', borderRadius: 14, padding: 18, gap: 12 },
-  milestonePaid: { borderColor: 'rgba(74,222,128,0.4)', backgroundColor: 'rgba(74,222,128,0.05)' },
+  partyValue: { fontFamily: FONTS.mono, fontSize: 13, fontWeight: '700', color: COLORS.foreground },
+  meBadge: { backgroundColor: COLORS.emeraldBg, borderWidth: 0.5, borderColor: COLORS.emerald, paddingHorizontal: 6, paddingVertical: 2, borderRadius: 0 },
+  meBadgeText: { fontFamily: FONTS.mono, fontSize: 10, fontWeight: '900', color: COLORS.emerald },
+  milestoneCard: { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border, borderRadius: 0, padding: 18, gap: 12 },
+  milestonePaid: { borderColor: COLORS.emerald, backgroundColor: COLORS.emeraldBg },
   msTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   msLeft: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
-  msTitle: { fontSize: 15, fontWeight: '700', color: '#e8e8f0', flex: 1 },
-  msAmount: { fontSize: 16, fontWeight: '800', color: '#6c63ff' },
+  msTitle: { fontFamily: FONTS.sans, fontSize: 15, fontWeight: '800', color: COLORS.foreground, flex: 1 },
+  msAmount: { fontFamily: FONTS.mono, fontSize: 16, fontWeight: '900', color: COLORS.primary },
   msMetaRow: { flexDirection: 'row' },
-  msBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 6, borderWidth: 1 },
-  msBadgeText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
-  proofLink: { fontSize: 13, color: '#4FC3F7', marginTop: 4 },
-  proofNotes: { fontSize: 13, fontStyle: 'italic', color: '#6b6b85', marginTop: 2 },
-  msActions: { paddingTop: 12, borderTopWidth: 1, borderTopColor: '#2a2a38', gap: 12 },
-  btnOutline: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 44, borderWidth: 1, borderColor: '#2a2a38', borderRadius: 10 },
-  btnOutlineText: { fontSize: 14, fontWeight: '700', color: '#e8e8f0' },
-  inlineForm: { gap: 10, padding: 14, backgroundColor: '#0f0f13', borderRadius: 12, borderWidth: 1, borderColor: '#2a2a38' },
-  inlineInput: { backgroundColor: '#1a1a24', borderWidth: 1, borderColor: '#2a2a38', borderRadius: 8, padding: 12, color: '#e8e8f0', fontSize: 13 },
+  msBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 0, borderWidth: 1 },
+  msBadgeText: { fontFamily: FONTS.mono, fontSize: 11, fontWeight: '900', letterSpacing: 0.5 },
+  proofLink: { fontFamily: FONTS.sans, fontSize: 13, color: COLORS.primary, marginTop: 4 },
+  proofNotes: { fontFamily: FONTS.sans, fontSize: 13, fontStyle: 'italic', color: COLORS.mutedForeground, marginTop: 2 },
+  msActions: { paddingTop: 12, borderTopWidth: 1, borderTopColor: COLORS.border, gap: 12 },
+  btnOutline: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 44, borderWidth: 1, borderColor: COLORS.border, borderRadius: 0, backgroundColor: COLORS.background },
+  btnOutlineText: { fontFamily: FONTS.mono, fontSize: 14, fontWeight: '800', color: COLORS.foreground },
+  inlineForm: { gap: 10, padding: 14, backgroundColor: COLORS.background, borderRadius: 0, borderWidth: 1, borderColor: COLORS.border },
+  inlineInput: { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border, borderRadius: 0, padding: 12, color: COLORS.foreground, fontSize: 13, fontFamily: FONTS.sans },
   btnRow: { flexDirection: 'row', gap: 12 },
-  btnSuccess: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, backgroundColor: '#4ade80', borderRadius: 12 },
-  btnSuccessText: { fontSize: 14, fontWeight: '800', color: '#0f0f13' },
-  btnDestructive: { height: 48, backgroundColor: '#ff4d6d', borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
-  btnDestructiveText: { fontSize: 14, fontWeight: '700', color: '#e8e8f0' },
-  input: { backgroundColor: '#1a1a24', borderWidth: 1, borderColor: '#2a2a38', borderRadius: 8, padding: 14, color: '#e8e8f0', fontSize: 14 },
-  chatContainer: { backgroundColor: '#1a1a24', borderWidth: 1, borderColor: '#2a2a38', borderRadius: 14, padding: 16, minHeight: 200, gap: 12 },
-  emptyChat: { fontSize: 13, color: '#6b6b85', textAlign: 'center', marginTop: 40 },
+  btnSuccess: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, height: 48, backgroundColor: COLORS.emerald, borderRadius: 0 },
+  btnSuccessText: { fontFamily: FONTS.mono, fontSize: 14, fontWeight: '900', color: COLORS.background },
+  btnDestructive: { height: 48, backgroundColor: COLORS.red, borderRadius: 0, alignItems: 'center', justifyContent: 'center' },
+  btnDestructiveText: { fontFamily: FONTS.mono, fontSize: 14, fontWeight: '800', color: COLORS.foreground },
+  input: { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border, borderRadius: 0, padding: 14, color: COLORS.foreground, fontSize: 14, fontFamily: FONTS.sans },
+  chatContainer: { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border, borderRadius: 0, padding: 16, minHeight: 200, gap: 12 },
+  emptyChat: { fontFamily: FONTS.sans, fontSize: 13, color: COLORS.mutedForeground, textAlign: 'center', marginTop: 40 },
   msgRow: { flexDirection: 'row', justifyContent: 'flex-start' },
   msgRowMe: { justifyContent: 'flex-end' },
-  msgBubble: { backgroundColor: '#2a2a38', borderRadius: 12, padding: 12, maxWidth: '80%', gap: 4 },
-  msgBubbleMe: { backgroundColor: 'rgba(108,99,255,0.2)', borderWidth: 1, borderColor: '#6c63ff' },
-  msgSender: { fontSize: 11, fontWeight: '700', color: '#6c63ff' },
-  msgContent: { fontSize: 14, color: '#e8e8f0', lineHeight: 20 },
-  msgTime: { fontSize: 10, color: '#6b6b85', alignSelf: 'flex-end' },
+  msgBubble: { backgroundColor: COLORS.background, borderWidth: 1, borderColor: COLORS.border, borderRadius: 0, padding: 12, maxWidth: '80%', gap: 4 },
+  msgBubbleMe: { backgroundColor: COLORS.blueBg, borderWidth: 1, borderColor: COLORS.primary },
+  msgSender: { fontFamily: FONTS.mono, fontSize: 11, fontWeight: '900', color: COLORS.primary },
+  msgContent: { fontFamily: FONTS.sans, fontSize: 14, color: COLORS.foreground, lineHeight: 20 },
+  msgTime: { fontFamily: FONTS.mono, fontSize: 10, color: COLORS.mutedForeground, alignSelf: 'flex-end' },
   chatInputRow: { flexDirection: 'row', gap: 10, alignItems: 'center' },
-  chatInput: { flex: 1, backgroundColor: '#1a1a24', borderWidth: 1, borderColor: '#2a2a38', borderRadius: 12, paddingHorizontal: 16, height: 50, color: '#e8e8f0', fontSize: 14 },
-  sendBtn: { width: 50, height: 50, backgroundColor: '#6c63ff', borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
+  chatInput: { flex: 1, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border, borderRadius: 0, paddingHorizontal: 16, height: 50, color: COLORS.foreground, fontSize: 14, fontFamily: FONTS.sans },
+  sendBtn: { width: 50, height: 50, backgroundColor: COLORS.primary, borderRadius: 0, alignItems: 'center', justifyContent: 'center' },
   disputeSection: { marginHorizontal: 20, marginTop: 20, marginBottom: 40 },
-  disputeBox: { backgroundColor: '#1a1a24', borderWidth: 1, borderColor: '#ff4d6d', borderRadius: 16, padding: 20, gap: 16 },
-  disputeTitle: { fontSize: 16, fontWeight: '800', color: '#ff4d6d' },
-  disputeActiveCard: { marginHorizontal: 20, marginTop: 20, marginBottom: 40, backgroundColor: 'rgba(251,191,36,0.15)', borderWidth: 1, borderColor: '#fbbf24', borderRadius: 16, padding: 20, alignItems: 'center', gap: 10 },
-  disputeActiveTitle: { fontSize: 18, fontWeight: '800', color: '#fbbf24' },
-  disputeActiveDesc: { fontSize: 13, color: '#e8e8f0', textAlign: 'center', lineHeight: 20 },
+  disputeBox: { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.red, borderRadius: 0, padding: 20, gap: 16 },
+  disputeTitle: { fontFamily: FONTS.sans, fontSize: 16, fontWeight: '900', color: COLORS.red },
+  disputeActiveCard: { marginHorizontal: 20, marginTop: 20, marginBottom: 40, backgroundColor: COLORS.yellowBg, borderWidth: 1, borderColor: COLORS.yellow, borderRadius: 0, padding: 20, alignItems: 'center', gap: 10 },
+  disputeActiveTitle: { fontFamily: FONTS.sans, fontSize: 18, fontWeight: '900', color: COLORS.yellow },
+  disputeActiveDesc: { fontFamily: FONTS.sans, fontSize: 13, color: COLORS.foreground, textAlign: 'center', lineHeight: 20 },
 });

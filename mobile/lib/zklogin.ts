@@ -4,7 +4,7 @@ import {
   generateRandomness,
   getZkLoginSignature,
   genAddressSeed,
-  jwtToAddress,
+  computeZkLoginAddress,
   getExtendedEphemeralPublicKey,
 } from '@mysten/sui/zklogin';
 import { Transaction } from '@mysten/sui/transactions';
@@ -39,9 +39,10 @@ interface ZkLoginSession {
 }
 
 interface ZkProof {
-  proofPoints: unknown;
-  issBase64Details: unknown;
+  proofPoints: any;
+  issBase64Details: any;
   headerBase64: string;
+  [key: string]: any;
 }
 
 let _session: ZkLoginSession | null = null;
@@ -51,42 +52,87 @@ async function getOrCreateSalt(sub: string, jwt?: string): Promise<string> {
   const stored = await SecureStore.getItemAsync(key);
   if (stored) return stored;
 
-  if (jwt) {
-    try {
-      console.log('[ZkLogin] Enoki Salt servisine istek atılıyor...');
-      const saltRes = await fetch('https://api.enoki.mystenlabs.com/v1/zklogin/salt', {
-        method: 'GET',
-        headers: {
-          'Authorization': `Bearer ${ENOKI_API_KEY}`,
-          'zklogin-jwt': jwt,
-        },
-      });
-      if (saltRes.ok) {
-        const json = await saltRes.json();
-        const enokiSalt = json.data?.salt || json.salt;
-        if (enokiSalt) {
-          console.log('[ZkLogin] Enoki resmi salt alındı:', enokiSalt);
-          await SecureStore.setItemAsync(key, enokiSalt);
-          return enokiSalt;
-        }
-      } else {
-        const text = await saltRes.text();
-        console.warn('[ZkLogin] Enoki Salt servisi hata verdi:', saltRes.status, text);
-      }
-    } catch (e: any) {
-      console.warn('[ZkLogin] Enoki Salt servisine erişilemedi:', e.message);
-    }
+  if (!jwt) {
+    throw new Error('İlk giriş için JWT zorunludur, lokalde kayıtlı Salt bulunamadı.');
   }
 
-  const randomBytes = await Crypto.getRandomBytesAsync(16);
-  const hex = Array.from(randomBytes)
-    .map(b => b.toString(16).padStart(2, '0'))
-    .join('');
-  const salt = BigInt('0x' + hex).toString();
+  try {
+    console.log('[ZkLogin] Enoki Salt servisine istek atılıyor...');
+    const saltRes = await fetch('https://api.enoki.mystenlabs.com/v1/zklogin', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${ENOKI_API_KEY}`,
+        'zklogin-jwt': jwt,
+      },
+    });
 
-  console.log('[ZkLogin] Lokalde yeni salt üretildi:', salt);
-  await SecureStore.setItemAsync(key, salt);
-  return salt;
+    if (saltRes.ok) {
+      const json = await saltRes.json();
+      const enokiSalt = json.data?.salt || json.salt;
+      if (enokiSalt) {
+        console.log('[ZkLogin] Enoki resmi salt alındı:', enokiSalt);
+        await SecureStore.setItemAsync(key, enokiSalt);
+        return enokiSalt;
+      }
+    }
+
+    console.warn(`[ZkLogin] Enoki Salt yanıtı başarısız (${saltRes.status}), Mysten Salt servisi deneniyor...`);
+    const mystenRes = await fetch('https://salt.api.mystenlabs.com/get_salt', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: jwt }),
+    });
+
+    if (mystenRes.ok) {
+      const json = await mystenRes.json();
+      if (json.salt) {
+        console.log('[ZkLogin] Mysten resmi salt alındı:', json.salt);
+        await SecureStore.setItemAsync(key, json.salt);
+        return json.salt;
+      }
+    }
+
+    const text = await mystenRes.text();
+    throw new Error(`Salt servisleri başarısız oldu: ${text}`);
+  } catch (e: any) {
+    console.error('[ZkLogin] Salt servislerine erişilemedi:', e.message);
+    throw new Error(`Salt servislerine ulaşılamadı. Cüzdan açılamıyor: ${e.message}`);
+  }
+}
+
+// ─── Yardımcı Fallback Epoch Alıcı ──────────────────────────────────────────
+async function getEpochFromFallback(): Promise<string> {
+  const rpcs = [
+    'https://fullnode.testnet.sui.io',
+    'https://sui-testnet-endpoint.fc.io',
+    'https://sui-testnet.public.blastapi.io',
+    'https://testnet.suiet.app',
+  ];
+
+  for (const url of rpcs) {
+    try {
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          jsonrpc: '2.0',
+          id: 1,
+          method: 'suix_getLatestSuiSystemState',
+          params: [],
+        }),
+      });
+      if (res.ok) {
+        const json = await res.json();
+        if (json?.result?.epoch) {
+          console.log(`[ZkLogin] Fallback Epoch OK (${url}):`, json.result.epoch);
+          return json.result.epoch;
+        }
+      }
+    } catch (err: any) {
+      console.warn(`[ZkLogin] Fallback RPC başarısız (${url}):`, err.message);
+    }
+  }
+  throw new Error('Sui RPC sunucularına ulaşılamadı. Lütfen internet bağlantınızı kontrol edin.');
 }
 
 let _cachedPreparedSession: ZkPreparedSession | null = null;
@@ -105,20 +151,8 @@ export async function prepareZkLoginSession(): Promise<ZkPreparedSession> {
     const state = await suiClient.getLatestSuiSystemState();
     epoch = state.epoch;
   } catch (e: any) {
-    console.error('[ZkLogin] Sui RPC hatası:', e.message);
-    const res = await fetch('https://fullnode.testnet.sui.io:443', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'suix_getLatestSuiSystemState',
-        params: [],
-      }),
-    });
-    const json = await res.json();
-    if (!json.result) throw new Error('Sui RPC yanıt vermedi');
-    epoch = json.result.epoch;
+    console.warn('[ZkLogin] suiClient epoch alamadı, raw HTTP fallback deneniyor...');
+    epoch = await getEpochFromFallback();
   }
 
   const maxEpoch = Number(epoch) + 10;
@@ -139,7 +173,7 @@ export async function prepareZkLoginSession(): Promise<ZkPreparedSession> {
     nonce
   );
 
-  console.error('[ZkLogin] Nonce hazırlandı, maxEpoch:', maxEpoch);
+  console.log('[ZkLogin] Nonce hazırlandı, maxEpoch:', maxEpoch);
   _cachedPreparedSession = { keypair, randomness, maxEpoch, nonce, hashedNonce };
   return _cachedPreparedSession;
 }
@@ -170,6 +204,7 @@ export async function completeZkLogin(
   }
 
   const sub: string = jwtPayload.sub;
+  const iss: string = jwtPayload.iss || 'https://accounts.google.com';
   const aud: string = typeof jwtPayload.aud === 'string' ? jwtPayload.aud : jwtPayload.aud[0];
   const salt = await getOrCreateSalt(sub, jwt);
 
@@ -205,7 +240,14 @@ export async function completeZkLogin(
   const resJson = await proverRes.json();
   const proof = resJson.data || resJson;
   const addressSeed = proof.addressSeed || localSeedStr;
-  const address = jwtToAddress(jwt, BigInt(salt));
+
+  const address = computeZkLoginAddress({
+    claimName: 'sub',
+    claimValue: sub,
+    iss,
+    aud,
+    userSalt: BigInt(salt),
+  });
 
   console.log('[ZkLogin] Adres alındı:', address);
   console.log('[ZkLogin] Proof addressSeed:', addressSeed);
@@ -250,24 +292,16 @@ export async function restoreZkLoginSession(): Promise<string | null> {
     const state = await suiClient.getLatestSuiSystemState();
     epoch = state.epoch;
   } catch (e: any) {
-    console.error('[ZkLogin] Restore RPC hatası:', e.message);
-    const res = await fetch('https://fullnode.testnet.sui.io:443', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        jsonrpc: '2.0',
-        id: 1,
-        method: 'suix_getLatestSuiSystemState',
-        params: [],
-      }),
-    });
-    const json = await res.json();
-    if (!json.result) return null;
-    epoch = json.result.epoch;
+    console.warn('[ZkLogin] Restore RPC hatası, fallback deneniyor...');
+    try {
+      epoch = await getEpochFromFallback();
+    } catch {
+      return null;
+    }
   }
 
   if (Number(epoch) >= stored.maxEpoch) {
-    console.error('[ZkLogin] Session süresi dolmuş.');
+    console.warn('[ZkLogin] Session süresi dolmuş.');
     await storage.clearZkLoginSession();
     return null;
   }
@@ -297,17 +331,23 @@ export async function signAndExecuteWithZkLogin(
 
   try {
     tx.setSender(sender);
-    const txBytes = await tx.build({ client: suiClient });
-
-    const { bytes, signature: ephemeralSig } =
-      await _session.keypair.signTransaction(txBytes);
 
     console.log('[ZkLogin] İmza Hazırlığı - Sender:', sender);
     console.log('[ZkLogin] maxEpoch:', _session.maxEpoch);
     console.log('[ZkLogin] addressSeed:', _session.addressSeed);
 
+    const { bytes, signature: ephemeralSig } = await tx.sign({
+      client: suiClient,
+      signer: _session.keypair,
+    });
+
     const zkSig = getZkLoginSignature({
-      inputs: { ..._session.proof, addressSeed: _session.addressSeed } as any,
+      inputs: {
+        proofPoints: _session.proof.proofPoints,
+        issBase64Details: _session.proof.issBase64Details,
+        headerBase64: _session.proof.headerBase64,
+        addressSeed: _session.addressSeed,
+      },
       maxEpoch: _session.maxEpoch,
       userSignature: ephemeralSig,
     });
@@ -335,9 +375,7 @@ export async function signAndExecuteWithZkLogin(
 // ─── Logout ──────────────────────────────────────────────────────────────────
 
 export async function logoutZkLogin(): Promise<void> {
-  if (_session?.sub) {
-    await SecureStore.deleteItemAsync(`zk_salt_${_session.sub}`);
-  }
+  // DİKKAT: Cüzdan adresinin değişmemesi için Salt kalıcı olarak bırakılıyor!
   _session = null;
   _cachedPreparedSession = null;
   await storage.clearZkLoginSession();

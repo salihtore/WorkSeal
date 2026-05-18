@@ -11,6 +11,7 @@ import {
   TouchableOpacity,
   Linking,
 } from 'react-native';
+import { router } from 'expo-router';
 import {
   User,
   Wallet,
@@ -20,7 +21,7 @@ import {
   Trophy,
   Shield,
   CheckCircle2,
-  LogOut,
+  Receipt,
 } from 'lucide-react-native';
 import { useWalletStore } from '@/lib/wallet-store';
 import { useContracts } from '@/hooks/use-contracts';
@@ -32,7 +33,7 @@ import { mistToSui, ContractStatus } from '@/types';
 import { COLORS, FONTS, SPACING } from '@/constants/theme';
 
 export default function ProfileScreen() {
-  const { address, disconnect } = useWalletStore();
+  const { address } = useWalletStore();
   const { contracts, loading, isArbitrator } = useContracts(address);
   const [isAnonymous, setIsAnonymous] = useState(false);
   const [editing, setEditing] = useState(false);
@@ -46,10 +47,6 @@ export default function ProfileScreen() {
     (acc, c) => acc + BigInt(c.total_budget),
     0n
   );
-
-  const handleDisconnect = async () => {
-    await disconnect();
-  };
 
   return (
     <View style={styles.container}>
@@ -127,7 +124,11 @@ export default function ProfileScreen() {
           )}
 
           {/* Wallet Row */}
-          <View style={styles.walletRow}>
+          <TouchableOpacity
+            style={styles.walletRow}
+            onPress={() => router.push('/wallet' as any)}
+            activeOpacity={0.7}
+          >
             <View style={styles.walletInfo}>
               <Wallet size={12} color={COLORS.mutedForeground} />
               <View>
@@ -140,15 +141,25 @@ export default function ProfileScreen() {
               </View>
             </View>
             {address && (
-              <TouchableOpacity
-                onPress={() =>
-                  Linking.openURL(`https://suivision.xyz/account/${address}`)
-                }
-              >
-                <ExternalLink size={16} color={COLORS.mutedForeground} />
-              </TouchableOpacity>
+              <ExternalLink size={16} color={COLORS.mutedForeground} />
             )}
-          </View>
+          </TouchableOpacity>
+
+          {/* Invoices Row */}
+          <TouchableOpacity
+            style={styles.walletRow}
+            onPress={() => router.push('/(tabs)/invoices' as any)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.walletInfo}>
+              <Receipt size={12} color={COLORS.emerald} />
+              <View>
+                <Text style={styles.walletLabel}>ARŞİV</Text>
+                <Text style={styles.walletAddress}>Faturalarım & Makbuzlar</Text>
+              </View>
+            </View>
+            <ExternalLink size={16} color={COLORS.mutedForeground} />
+          </TouchableOpacity>
 
           {/* Stats */}
           <View style={styles.statsRow}>
@@ -209,7 +220,7 @@ export default function ProfileScreen() {
             <Text style={styles.bioText}>
               {isAnonymous
                 ? 'Kullanıcı anonim kalmayı tercih etmiştir.'
-                : form.bio || 'Biyografi eklenmedi.'}
+                : form.bio || 'Web3 özgeçmişiniz ve uzmanlık alanlarınız hakkında henüz bilgi girilmedi.'}
             </Text>
           )}
         </View>
@@ -225,9 +236,9 @@ export default function ProfileScreen() {
                 <View style={styles.trophyIcon}>
                   <Trophy size={24} color={COLORS.primary} />
                 </View>
-                <Text style={styles.achievementTitle}>Güvenilir Freelancer</Text>
+                <Text style={styles.achievementTitle}>Güvenilir Uzman</Text>
                 <Text style={styles.achievementDesc}>
-                  {successfulJobs} sözleşmeyi başarıyla tamamladın.
+                  {successfulJobs} akıllı sözleşme projesini eksiksiz ve başarıyla teslim ettiniz.
                 </Text>
               </>
             ) : (
@@ -236,7 +247,7 @@ export default function ProfileScreen() {
                   <Trophy size={24} color={COLORS.mutedForeground} />
                 </View>
                 <Text style={styles.achievementDescEmpty}>
-                  Henüz on-chain başarım bulunmuyor.
+                  Henüz tamamlanmış ve blokzincire işlenmiş bir başarı sertifikanız bulunmuyor.
                 </Text>
               </>
             )}
@@ -247,26 +258,13 @@ export default function ProfileScreen() {
         {isArbitrator && (
           <View style={[styles.section, styles.adminSection]}>
             <Text style={[styles.sectionTitle, styles.adminTitle]}>
-              <Shield size={13} color={COLORS.primary} /> Admin: Hakem Kaydı
+              <Shield size={13} color={COLORS.primary} /> Admin: Hakem Kaydı & Denetim
             </Text>
             <Text style={styles.adminDesc}>
-              Sözleşmeyi yayınlayan cüzdan ile yeni hakemler tanımlayabilirsiniz.
+              Sistem yöneticisi yetkisine sahip cüzdan adresinizle on-chain uyuşmazlık hakemleri tanımlayabilir ve denetleyebilirsiniz.
             </Text>
           </View>
         )}
-
-        {/* Disconnect */}
-        <View style={styles.section}>
-          <Button
-            onPress={handleDisconnect}
-            variant="destructive"
-            size="md"
-            fullWidth
-          >
-            <LogOut size={14} color={COLORS.destructive} />
-            {'  '}Cüzdanı Ayır
-          </Button>
-        </View>
       </ScrollView>
     </View>
   );

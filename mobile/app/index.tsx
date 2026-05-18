@@ -5,29 +5,28 @@
 
 import React, { useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { router } from 'expo-router';
+import { router, useRootNavigationState } from 'expo-router';
 import { useWalletStore } from '@/lib/wallet-store';
 import { COLORS, FONTS } from '@/constants/theme';
 import AppBackground from '@/components/AppBackground';
 
 export default function IndexScreen() {
+  const rootNavigationState = useRootNavigationState();
   const { isConnected, isLoading } = useWalletStore();
 
   useEffect(() => {
-    const timeout = setTimeout(() => {
-      router.replace('/login');
-    }, 3000);
-    return () => clearTimeout(timeout);
-  }, []);
+    if (!rootNavigationState?.key || isLoading) return;
 
-  useEffect(() => {
-    if (isLoading) return;
-    if (isConnected) {
-      router.replace('/(tabs)/escrow');
-    } else {
-      router.replace('/login');
-    }
-  }, [isConnected, isLoading]);
+    const timer = setTimeout(() => {
+      if (isConnected) {
+        router.replace('/(tabs)/escrow');
+      } else {
+        router.replace('/login');
+      }
+    }, 100);
+
+    return () => clearTimeout(timer);
+  }, [isConnected, isLoading, rootNavigationState?.key]);
 
   return (
     <View style={styles.container}>

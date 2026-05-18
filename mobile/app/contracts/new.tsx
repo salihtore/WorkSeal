@@ -13,16 +13,28 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { Plus, Trash2, ChevronLeft, ChevronRight, CheckCircle2, Shield, FileText, AlertCircle } from 'lucide-react-native';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import {
+  Plus,
+  Trash2,
+  ChevronLeft,
+  ChevronRight,
+  CheckCircle2,
+  Shield,
+  FileText,
+  AlertCircle,
+  Calendar,
+} from 'lucide-react-native';
 import { useWalletStore } from '@/lib/wallet-store';
 import { useTransaction } from '@/hooks/use-transaction';
 import AppBackground from '@/components/AppBackground';
 import { suiToMist } from '@/types';
+import { COLORS, FONTS } from '@/constants/theme';
 
 interface MilestoneItem {
   title: string;
   amount: string;
-  deadline: string;
+  deadlineDate: Date;
 }
 
 const STEPS = ["Temel Bilgiler", "Maddeler", "Ödeme Özeti", "Önizleme"];
@@ -35,12 +47,17 @@ export default function NewContractScreen() {
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [deadlineDays, setDeadlineDays] = useState('30');
   const [identityPreference, setIdentityPreference] = useState<'any' | 'verified' | 'anonymous'>('any');
 
+  // Ana Sözleşme Teslim Tarihi State
+  const [deadlineDate, setDeadlineDate] = useState<Date>(new Date(Date.now() + 30 * 86400000));
+  const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
+
+  // Milestone Aşamaları
   const [milestones, setMilestones] = useState<MilestoneItem[]>([
-    { title: '', amount: '', deadline: '30' },
+    { title: '', amount: '', deadlineDate: new Date(Date.now() + 30 * 86400000) },
   ]);
+  const [activeMilestonePicker, setActiveMilestonePicker] = useState<number | null>(null);
 
   const totalSuiStr = useMemo(() => {
     const sum = milestones.reduce((acc, curr) => {
@@ -51,7 +68,10 @@ export default function NewContractScreen() {
   }, [milestones]);
 
   const addMilestone = () => {
-    setMilestones((prev) => [...prev, { title: '', amount: '', deadline: '30' }]);
+    setMilestones((prev) => [
+      ...prev,
+      { title: '', amount: '', deadlineDate: new Date(Date.now() + 30 * 86400000) },
+    ]);
   };
 
   const removeMilestone = (index: number) => {
@@ -62,10 +82,24 @@ export default function NewContractScreen() {
     setMilestones((prev) => prev.filter((_, i) => i !== index));
   };
 
-  const updateMilestone = (index: number, field: keyof MilestoneItem, val: string) => {
+  const updateMilestone = (index: number, field: keyof MilestoneItem, val: any) => {
     setMilestones((prev) =>
       prev.map((m, i) => (i === index ? { ...m, [field]: val } : m))
     );
+  };
+
+  const formatDate = (date: Date) => {
+    return date.toLocaleDateString('tr-TR', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+    });
+  };
+
+  const getDaysDifference = (targetDate: Date) => {
+    const diffTime = targetDate.getTime() - Date.now();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays > 0 ? diffDays : 0;
   };
 
   const handleNextStep = () => {
@@ -78,9 +112,8 @@ export default function NewContractScreen() {
         Alert.alert('Eksik Bilgi', 'Lütfen en az 10 karakterlik bir iş tanımı girin.');
         return;
       }
-      const days = parseInt(deadlineDays, 10);
-      if (isNaN(days) || days <= 0) {
-        Alert.alert('Hatalı Süre', 'Lütfen geçerli bir teslim süresi (gün) girin.');
+      if (getDaysDifference(deadlineDate) <= 0) {
+        Alert.alert('Hatalı Tarih', 'Lütfen gelecekteki bir teslimat tarihi seçin.');
         return;
       }
     } else if (step === 1) {
@@ -95,6 +128,10 @@ export default function NewContractScreen() {
           Alert.alert('Hatalı Tutar', `${i + 1}. aşama için geçerli bir SUI tutarı girin (Sıfırdan büyük olmalı).`);
           return;
         }
+        if (getDaysDifference(ms.deadlineDate) <= 0) {
+          Alert.alert('Hatalı Tarih', `${i + 1}. aşama için gelecekteki bir teslim tarihi seçin.`);
+          return;
+        }
       }
     }
     setStep((prev) => Math.min(prev + 1, STEPS.length - 1));
@@ -106,8 +143,7 @@ export default function NewContractScreen() {
       return;
     }
 
-    const days = parseInt(deadlineDays, 10);
-    const deadline_ms = Date.now() + days * 86400000;
+    const deadline_ms = deadlineDate.getTime();
     const milestone_titles = milestones.map((m) => m.title);
     const milestone_amounts = milestones.map((m) => suiToMist(parseFloat(m.amount)));
 
@@ -163,7 +199,7 @@ export default function NewContractScreen() {
                   onPress={() => i <= step && setStep(i)}
                   disabled={i > step || isPending}
                 >
-                  {isPast ? <CheckCircle2 size={14} color="#10b981" /> : <Text style={[styles.stepNum, isActive && styles.stepNumActive]}>{i + 1}</Text>}
+                  {isPast ? <CheckCircle2 size={14} color={COLORS.emerald} /> : <Text style={[styles.stepNum, isActive && styles.stepNumActive]}>{i + 1}</Text>}
                   <Text style={[styles.stepText, isActive && styles.stepTextActive, isPast && styles.stepTextPast]}>
                     {s}
                   </Text>
@@ -179,7 +215,7 @@ export default function NewContractScreen() {
             <View style={styles.stepContainer}>
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>SÖZLEŞME DETAYLARI</Text>
-                <Text style={styles.sectionSub}>İşin kapsamını ve genel teslimat kurallarını belirleyin.</Text>
+                <Text style={styles.sectionSub}>Projenizin genel tanımını ve mutabakat koşullarını eksiksiz tanımlayın.</Text>
               </View>
 
               <View style={styles.inputGroup}>
@@ -189,7 +225,7 @@ export default function NewContractScreen() {
                   value={title}
                   onChangeText={setTitle}
                   placeholder="Örn: E-ticaret Web Sitesi Geliştirme"
-                  placeholderTextColor="#6b6b85"
+                  placeholderTextColor={COLORS.mutedForeground}
                   editable={!isPending}
                 />
               </View>
@@ -201,26 +237,38 @@ export default function NewContractScreen() {
                   value={description}
                   onChangeText={setDescription}
                   placeholder="İşin kapsamını, teslim edilecekleri ve beklentileri açıklayın..."
-                  placeholderTextColor="#6b6b85"
+                  placeholderTextColor={COLORS.mutedForeground}
                   multiline
                   numberOfLines={4}
                   editable={!isPending}
                 />
               </View>
 
-              <View style={styles.gridRow}>
-                <View style={[styles.inputGroup, { flex: 1 }]}>
-                  <Text style={styles.label}>Teslim Süresi (Gün) *</Text>
-                  <TextInput
-                    style={styles.input}
-                    value={deadlineDays}
-                    onChangeText={setDeadlineDays}
-                    placeholder="30"
-                    placeholderTextColor="#6b6b85"
-                    keyboardType="number-pad"
-                    editable={!isPending}
+              {/* Takvimden Tarih Seçimi */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Son Teslim Tarihi *</Text>
+                <TouchableOpacity
+                  style={styles.datePickerBtn}
+                  onPress={() => setShowDeadlinePicker(true)}
+                  disabled={isPending}
+                >
+                  <Calendar size={18} color={COLORS.primary} />
+                  <Text style={styles.datePickerText}>
+                    {formatDate(deadlineDate)} <Text style={styles.daysDiffText}>({getDaysDifference(deadlineDate)} Gün)</Text>
+                  </Text>
+                </TouchableOpacity>
+                {showDeadlinePicker && (
+                  <DateTimePicker
+                    value={deadlineDate}
+                    mode="date"
+                    display="default"
+                    minimumDate={new Date()}
+                    onChange={(event, selectedDate) => {
+                      setShowDeadlinePicker(false);
+                      if (selectedDate) setDeadlineDate(selectedDate);
+                    }}
                   />
-                </View>
+                )}
               </View>
 
               <View style={styles.inputGroup}>
@@ -256,10 +304,10 @@ export default function NewContractScreen() {
               <View style={styles.milestoneHeaderRow}>
                 <View>
                   <Text style={styles.sectionTitle}>MİLESTONE'LAR (AŞAMALAR)</Text>
-                  <Text style={styles.sectionSub}>İşi parçalara bölerek güvenli ödeme akışı oluşturun.</Text>
+                  <Text style={styles.sectionSub}>Proje aşamalarını belirleyerek on-chain ödeme kilometre taşları oluşturun.</Text>
                 </View>
                 <TouchableOpacity style={styles.addBtn} onPress={addMilestone} disabled={isPending}>
-                  <Plus size={16} color="#6c63ff" />
+                  <Plus size={16} color={COLORS.primary} />
                   <Text style={styles.addBtnText}>Aşama Ekle</Text>
                 </TouchableOpacity>
               </View>
@@ -272,7 +320,7 @@ export default function NewContractScreen() {
                     </View>
                     {milestones.length > 1 && (
                       <TouchableOpacity onPress={() => removeMilestone(index)} disabled={isPending}>
-                        <Trash2 size={18} color="#ff4d6d" />
+                        <Trash2 size={18} color={COLORS.red} />
                       </TouchableOpacity>
                     )}
                   </View>
@@ -284,7 +332,7 @@ export default function NewContractScreen() {
                       value={ms.title}
                       onChangeText={(val) => updateMilestone(index, 'title', val)}
                       placeholder="Örn: Arayüz ve Tasarım Onayı"
-                      placeholderTextColor="#6b6b85"
+                      placeholderTextColor={COLORS.mutedForeground}
                       editable={!isPending}
                     />
                   </View>
@@ -297,22 +345,37 @@ export default function NewContractScreen() {
                         value={ms.amount}
                         onChangeText={(val) => updateMilestone(index, 'amount', val)}
                         placeholder="10.5"
-                        placeholderTextColor="#6b6b85"
+                        placeholderTextColor={COLORS.mutedForeground}
                         keyboardType="decimal-pad"
                         editable={!isPending}
                       />
                     </View>
-                    <View style={[styles.inputGroup, { flex: 1 }]}>
-                      <Text style={styles.label}>Süre (Gün)</Text>
-                      <TextInput
-                        style={styles.input}
-                        value={ms.deadline}
-                        onChangeText={(val) => updateMilestone(index, 'deadline', val)}
-                        placeholder="30"
-                        placeholderTextColor="#6b6b85"
-                        keyboardType="number-pad"
-                        editable={!isPending}
-                      />
+
+                    {/* Milestone Takvim Seçimi */}
+                    <View style={[styles.inputGroup, { flex: 1.2 }]}>
+                      <Text style={styles.label}>Hedef Tarih</Text>
+                      <TouchableOpacity
+                        style={styles.msDatePickerBtn}
+                        onPress={() => setActiveMilestonePicker(index)}
+                        disabled={isPending}
+                      >
+                        <Calendar size={15} color={COLORS.primary} />
+                        <Text style={styles.msDatePickerText} numberOfLines={1}>
+                          {formatDate(ms.deadlineDate)}
+                        </Text>
+                      </TouchableOpacity>
+                      {activeMilestonePicker === index && (
+                        <DateTimePicker
+                          value={ms.deadlineDate}
+                          mode="date"
+                          display="default"
+                          minimumDate={new Date()}
+                          onChange={(event, selectedDate) => {
+                            setActiveMilestonePicker(null);
+                            if (selectedDate) updateMilestone(index, 'deadlineDate', selectedDate);
+                          }}
+                        />
+                      )}
                     </View>
                   </View>
                 </View>
@@ -331,11 +394,11 @@ export default function NewContractScreen() {
               <View style={styles.escrowBox}>
                 <View style={styles.escrowBoxHeader}>
                   <View style={styles.escrowShield}>
-                    <Shield size={20} color="#10b981" />
+                    <Shield size={20} color={COLORS.emerald} />
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.escrowTitle}>Sui Escrow Koruması Aktif</Text>
-                    <Text style={styles.escrowDesc}>İş kanıtı sunulmadan bu bütçeye dokunulamaz.</Text>
+                    <Text style={styles.escrowDesc}>Akıllı sözleşme şartları yerine getirilip onaylanmadan kilitli varlıklar transfer edilemez.</Text>
                   </View>
                 </View>
 
@@ -356,7 +419,7 @@ export default function NewContractScreen() {
             <View style={styles.stepContainer}>
               <View style={styles.previewTop}>
                 <View style={styles.previewIcon}>
-                  <FileText size={24} color="#6c63ff" />
+                  <FileText size={24} color={COLORS.primary} />
                 </View>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.previewTitle}>{title || "İsimsiz Sözleşme"}</Text>
@@ -374,7 +437,7 @@ export default function NewContractScreen() {
                 </View>
                 <View style={styles.previewBox}>
                   <Text style={styles.previewBoxLabel}>Teslim Süresi</Text>
-                  <Text style={styles.previewBoxVal}>{deadlineDays} Gün</Text>
+                  <Text style={styles.previewBoxVal}>{formatDate(deadlineDate)} ({getDaysDifference(deadlineDate)} Gün)</Text>
                 </View>
               </View>
 
@@ -391,9 +454,9 @@ export default function NewContractScreen() {
               </View>
 
               <View style={styles.alertBox}>
-                <AlertCircle size={20} color="#6c63ff" />
+                <AlertCircle size={20} color={COLORS.primary} />
                 <Text style={styles.alertBoxText}>
-                  Sözleşmeyi gönderdiğinde ZkLogin oturumun ile imza atman gerekecektir. Sözleşme blockchain'e kaydedildikten sonra müşteri tarafından fonlanması beklenecektir.
+                  Bu işlem, akıllı sözleşmeyi ZkLogin kimliğinizle imzalayarak Sui Blockchain üzerine işleyecektir. Yayınlandıktan sonra Escrow havuzunun fonlanması beklenecektir.
                 </Text>
               </View>
             </View>
@@ -406,14 +469,14 @@ export default function NewContractScreen() {
               onPress={() => step > 0 && setStep(step - 1)}
               disabled={step === 0 || isPending}
             >
-              <ChevronLeft size={16} color="#a0a0b8" />
+              <ChevronLeft size={16} color={COLORS.mutedForeground} />
               <Text style={styles.navBtnBackText}>Geri</Text>
             </TouchableOpacity>
 
             {step < STEPS.length - 1 ? (
               <TouchableOpacity style={[styles.navBtn, styles.navBtnNext]} onPress={handleNextStep}>
                 <Text style={styles.navBtnNextText}>İleri</Text>
-                <ChevronRight size={16} color="#ffffff" />
+                <ChevronRight size={16} color={COLORS.primaryForeground} />
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
@@ -422,11 +485,11 @@ export default function NewContractScreen() {
                 disabled={isPending}
               >
                 {isPending ? (
-                  <ActivityIndicator color="#ffffff" size="small" />
+                  <ActivityIndicator color={COLORS.background} size="small" />
                 ) : (
                   <>
                     <Text style={styles.submitBtnFinalText}>Sözleşmeyi İmzala & Gönder</Text>
-                    <CheckCircle2 size={18} color="#ffffff" />
+                    <CheckCircle2 size={18} color={COLORS.background} />
                   </>
                 )}
               </TouchableOpacity>
@@ -439,7 +502,7 @@ export default function NewContractScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#0f0f13' },
+  container: { flex: 1, backgroundColor: COLORS.background },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -447,16 +510,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#2a2a38',
+    borderBottomColor: COLORS.border,
   },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  backText: { fontSize: 15, fontWeight: '600', color: '#e8e8f0' },
-  headerTitle: { fontSize: 18, fontWeight: '700', color: '#e8e8f0' },
+  backText: { fontFamily: FONTS.sans, fontSize: 15, fontWeight: '700', color: COLORS.foreground },
+  headerTitle: { fontFamily: FONTS.sans, fontSize: 18, fontWeight: '900', color: COLORS.foreground },
   stepsBar: {
     paddingVertical: 14,
     borderBottomWidth: 1,
-    borderBottomColor: '#1a1a24',
-    backgroundColor: '#14141d',
+    borderBottomColor: COLORS.border,
+    backgroundColor: COLORS.card,
   },
   stepsScroll: { paddingHorizontal: 20, gap: 10 },
   stepBadge: {
@@ -465,60 +528,84 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: '#1a1a24',
+    borderRadius: 0,
+    backgroundColor: COLORS.background,
     borderWidth: 1,
-    borderColor: '#2a2a38',
+    borderColor: COLORS.border,
   },
   stepBadgeActive: {
-    backgroundColor: '#6c63ff',
-    borderColor: '#8b85ff',
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   stepBadgePast: {
-    backgroundColor: 'rgba(16,185,129,0.1)',
-    borderColor: 'rgba(16,185,129,0.3)',
+    backgroundColor: COLORS.emeraldBg,
+    borderColor: COLORS.emerald,
   },
-  stepNum: { fontSize: 12, fontWeight: '700', color: '#a0a0b8' },
-  stepNumActive: { color: '#ffffff' },
-  stepText: { fontSize: 13, fontWeight: '600', color: '#a0a0b8' },
-  stepTextActive: { color: '#ffffff', fontWeight: '700' },
-  stepTextPast: { color: '#10b981' },
+  stepNum: { fontFamily: FONTS.mono, fontSize: 12, fontWeight: '900', color: COLORS.mutedForeground },
+  stepNumActive: { color: COLORS.primaryForeground },
+  stepText: { fontFamily: FONTS.sans, fontSize: 13, fontWeight: '600', color: COLORS.mutedForeground },
+  stepTextActive: { color: COLORS.primaryForeground, fontWeight: '900' },
+  stepTextPast: { color: COLORS.emerald, fontWeight: '700' },
   scroll: { flex: 1 },
   scrollContent: { padding: 20, paddingBottom: 40 },
   stepContainer: { gap: 20 },
   sectionHeader: { gap: 4 },
-  sectionTitle: { fontSize: 15, fontWeight: '800', color: '#e8e8f0', letterSpacing: 0.5 },
-  sectionSub: { fontSize: 13, color: '#a0a0b8' },
+  sectionTitle: { fontFamily: FONTS.mono, fontSize: 14, fontWeight: '900', color: COLORS.foreground, letterSpacing: 0.5 },
+  sectionSub: { fontFamily: FONTS.sans, fontSize: 13, color: COLORS.mutedForeground },
   inputGroup: { gap: 8 },
-  label: { fontSize: 13, fontWeight: '600', color: '#e8e8f0' },
+  label: { fontFamily: FONTS.sans, fontSize: 13, fontWeight: '700', color: COLORS.foreground },
   input: {
-    backgroundColor: '#1a1a24',
+    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: '#2a2a38',
-    borderRadius: 12,
+    borderColor: COLORS.border,
+    borderRadius: 0,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    color: '#e8e8f0',
+    color: COLORS.foreground,
     fontSize: 14,
+    fontFamily: FONTS.sans,
   },
   textarea: { height: 110, textAlignVertical: 'top' },
+  datePickerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+  },
+  datePickerText: { fontFamily: FONTS.sans, fontSize: 14, fontWeight: '700', color: COLORS.foreground },
+  daysDiffText: { fontFamily: FONTS.mono, fontSize: 13, color: COLORS.primary, fontWeight: '600' },
+  msDatePickerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: COLORS.card,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 12,
+    paddingVertical: 14,
+  },
+  msDatePickerText: { fontFamily: FONTS.sans, fontSize: 13, fontWeight: '600', color: COLORS.foreground, flex: 1 },
   gridRow: { flexDirection: 'row', gap: 16 },
   identityRow: { flexDirection: 'row', gap: 10 },
   identityBtn: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 12,
+    borderRadius: 0,
     borderWidth: 1,
-    borderColor: '#2a2a38',
-    backgroundColor: '#1a1a24',
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.card,
     alignItems: 'center',
   },
   identityBtnSelected: {
-    borderColor: '#6c63ff',
-    backgroundColor: 'rgba(108,99,255,0.15)',
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.blueBg,
   },
-  identityBtnText: { fontSize: 13, fontWeight: '600', color: '#a0a0b8' },
-  identityBtnTextSelected: { color: '#6c63ff', fontWeight: '700' },
+  identityBtnText: { fontFamily: FONTS.sans, fontSize: 13, fontWeight: '600', color: COLORS.mutedForeground },
+  identityBtnTextSelected: { color: COLORS.primary, fontWeight: '900' },
   milestoneHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   addBtn: {
     flexDirection: 'row',
@@ -526,17 +613,17 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderRadius: 8,
+    borderRadius: 0,
     borderWidth: 1,
-    borderColor: '#6c63ff',
-    backgroundColor: 'rgba(108,99,255,0.1)',
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.blueBg,
   },
-  addBtnText: { fontSize: 13, fontWeight: '700', color: '#6c63ff' },
+  addBtnText: { fontFamily: FONTS.mono, fontSize: 13, fontWeight: '800', color: COLORS.primary },
   milestoneCard: {
-    backgroundColor: '#1a1a24',
+    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: '#2a2a38',
-    borderRadius: 16,
+    borderColor: COLORS.border,
+    borderRadius: 0,
     padding: 20,
     gap: 16,
   },
@@ -544,63 +631,65 @@ const styles = StyleSheet.create({
   milestoneBadge: {
     paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 6,
-    backgroundColor: '#2a2a38',
+    borderRadius: 0,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
   },
-  milestoneBadgeText: { fontSize: 12, fontWeight: '700', color: '#a0a0b8' },
+  milestoneBadgeText: { fontFamily: FONTS.mono, fontSize: 12, fontWeight: '800', color: COLORS.primary },
   summaryTopCard: {
     alignItems: 'center',
     padding: 24,
-    borderRadius: 20,
-    backgroundColor: '#1a1a24',
+    borderRadius: 0,
+    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: '#6c63ff',
+    borderColor: COLORS.primary,
   },
-  summarySub: { fontSize: 13, color: '#a0a0b8', marginBottom: 8 },
-  summaryTotal: { fontSize: 36, fontWeight: '900', color: '#e8e8f0', fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
-  summaryUnit: { fontSize: 20, color: '#6c63ff', fontWeight: '700' },
+  summarySub: { fontFamily: FONTS.sans, fontSize: 13, color: COLORS.mutedForeground, marginBottom: 8 },
+  summaryTotal: { fontSize: 36, fontWeight: '900', color: COLORS.primary, fontFamily: FONTS.mono },
+  summaryUnit: { fontSize: 20, color: COLORS.foreground, fontWeight: '700' },
   escrowBox: {
-    backgroundColor: '#1a1a24',
+    backgroundColor: COLORS.card,
     borderWidth: 1,
-    borderColor: '#2a2a38',
-    borderRadius: 16,
+    borderColor: COLORS.border,
+    borderRadius: 0,
     padding: 20,
     gap: 16,
   },
-  escrowBoxHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderBottomColor: '#2a2a38', paddingBottom: 16 },
-  escrowShield: { padding: 10, borderRadius: 12, backgroundColor: 'rgba(16,185,129,0.1)' },
-  escrowTitle: { fontSize: 15, fontWeight: '700', color: '#e8e8f0' },
-  escrowDesc: { fontSize: 12, color: '#a0a0b8', marginTop: 2 },
+  escrowBoxHeader: { flexDirection: 'row', alignItems: 'center', gap: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border, paddingBottom: 16 },
+  escrowShield: { padding: 10, borderRadius: 0, backgroundColor: COLORS.emeraldBg, borderWidth: 1, borderColor: COLORS.emerald },
+  escrowTitle: { fontFamily: FONTS.sans, fontSize: 15, fontWeight: '800', color: COLORS.foreground },
+  escrowDesc: { fontFamily: FONTS.sans, fontSize: 12, color: COLORS.mutedForeground, marginTop: 2 },
   milestoneList: { gap: 10 },
-  milestoneListItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, backgroundColor: '#14141d', borderRadius: 10 },
-  msListItemText: { fontSize: 14, color: '#a0a0b8', flex: 1, marginRight: 12 },
-  msListItemVal: { fontSize: 14, fontWeight: '700', color: '#e8e8f0', fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
-  previewTop: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: '#1a1a24', padding: 20, borderRadius: 16, borderWidth: 1, borderColor: '#2a2a38' },
-  previewIcon: { width: 52, height: 52, borderRadius: 16, backgroundColor: 'rgba(108,99,255,0.15)', alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: '#6c63ff' },
-  previewTitle: { fontSize: 18, fontWeight: '800', color: '#e8e8f0' },
+  milestoneListItem: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: 12, backgroundColor: COLORS.background, borderRadius: 0, borderWidth: 1, borderColor: COLORS.border },
+  msListItemText: { fontFamily: FONTS.sans, fontSize: 14, color: COLORS.foreground, flex: 1, marginRight: 12 },
+  msListItemVal: { fontFamily: FONTS.mono, fontSize: 14, fontWeight: '900', color: COLORS.primary },
+  previewTop: { flexDirection: 'row', alignItems: 'center', gap: 16, backgroundColor: COLORS.card, padding: 20, borderRadius: 0, borderWidth: 1, borderColor: COLORS.border },
+  previewIcon: { width: 52, height: 52, borderRadius: 0, backgroundColor: COLORS.blueBg, alignItems: 'center', justifyContent: 'center', borderWidth: 1, borderColor: COLORS.primary },
+  previewTitle: { fontFamily: FONTS.sans, fontSize: 18, fontWeight: '900', color: COLORS.foreground },
   liveBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 },
-  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#10b981' },
-  liveText: { fontSize: 12, fontWeight: '600', color: '#10b981' },
+  liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: COLORS.emerald },
+  liveText: { fontFamily: FONTS.mono, fontSize: 12, fontWeight: '800', color: COLORS.emerald },
   previewGrid: { flexDirection: 'row', gap: 16 },
-  previewBox: { flex: 1, padding: 16, backgroundColor: '#1a1a24', borderRadius: 16, borderWidth: 1, borderColor: '#2a2a38' },
-  previewBoxLabel: { fontSize: 12, fontWeight: '600', color: '#a0a0b8', marginBottom: 4 },
-  previewBoxVal: { fontSize: 14, fontWeight: '700', color: '#e8e8f0', fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
-  msSummarySection: { gap: 12, backgroundColor: '#1a1a24', padding: 20, borderRadius: 16, borderWidth: 1, borderColor: '#2a2a38' },
-  msSummaryTitle: { fontSize: 15, fontWeight: '700', color: '#e8e8f0', marginBottom: 4 },
-  msSummaryRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: '#2a2a38' },
-  msSummaryName: { fontSize: 14, color: '#a0a0b8', flex: 1, marginRight: 12 },
-  msSummaryBadge: { paddingHorizontal: 10, paddingVertical: 6, backgroundColor: '#2a2a38', borderRadius: 8 },
-  msSummaryBadgeVal: { fontSize: 13, fontWeight: '700', color: '#e8e8f0', fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace' },
-  alertBox: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: 'rgba(108,99,255,0.1)', padding: 16, borderRadius: 16, borderWidth: 1, borderColor: 'rgba(108,99,255,0.3)' },
-  alertBoxText: { fontSize: 12, color: '#d0d0e8', flex: 1, lineHeight: 18 },
-  navButtonsRow: { flexDirection: 'row', gap: 16, marginTop: 32, paddingTop: 20, borderTopWidth: 1, borderTopColor: '#2a2a38' },
-  navBtn: { height: 54, borderRadius: 14, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
-  navBtnBack: { flex: 1, backgroundColor: '#1a1a24', borderWidth: 1, borderColor: '#2a2a38' },
-  navBtnBackText: { fontSize: 15, fontWeight: '600', color: '#a0a0b8' },
+  previewBox: { flex: 1, padding: 16, backgroundColor: COLORS.card, borderRadius: 0, borderWidth: 1, borderColor: COLORS.border },
+  previewBoxLabel: { fontFamily: FONTS.mono, fontSize: 11, fontWeight: '700', color: COLORS.mutedForeground, marginBottom: 4 },
+  previewBoxVal: { fontFamily: FONTS.mono, fontSize: 13, fontWeight: '800', color: COLORS.primary },
+  msSummarySection: { gap: 12, backgroundColor: COLORS.card, padding: 20, borderRadius: 0, borderWidth: 1, borderColor: COLORS.border },
+  msSummaryTitle: { fontFamily: FONTS.mono, fontSize: 14, fontWeight: '800', color: COLORS.foreground, marginBottom: 4 },
+  msSummaryRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 10, borderBottomWidth: 1, borderBottomColor: COLORS.border },
+  msSummaryName: { fontFamily: FONTS.sans, fontSize: 14, color: COLORS.mutedForeground, flex: 1, marginRight: 12 },
+  msSummaryBadge: { paddingHorizontal: 10, paddingVertical: 6, backgroundColor: COLORS.background, borderRadius: 0, borderWidth: 1, borderColor: COLORS.border },
+  msSummaryBadgeVal: { fontFamily: FONTS.mono, fontSize: 13, fontWeight: '900', color: COLORS.primary },
+  alertBox: { flexDirection: 'row', alignItems: 'center', gap: 14, backgroundColor: COLORS.blueBg, padding: 16, borderRadius: 0, borderWidth: 1, borderColor: COLORS.primary },
+  alertBoxText: { fontFamily: FONTS.sans, fontSize: 12, color: COLORS.foreground, flex: 1, lineHeight: 18 },
+  navButtonsRow: { flexDirection: 'row', gap: 16, marginTop: 32, paddingTop: 20, borderTopWidth: 1, borderTopColor: COLORS.border },
+  navBtn: { height: 54, borderRadius: 0, alignItems: 'center', justifyContent: 'center', flexDirection: 'row', gap: 8 },
+  navBtnBack: { flex: 1, backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border },
+  navBtnBackText: { fontFamily: FONTS.mono, fontSize: 14, fontWeight: '800', color: COLORS.mutedForeground },
   navBtnDisabled: { opacity: 0.5 },
-  navBtnNext: { flex: 2, backgroundColor: '#6c63ff' },
-  navBtnNextText: { fontSize: 16, fontWeight: '700', color: '#ffffff' },
-  submitBtnFinal: { flex: 2, backgroundColor: '#10b981', shadowColor: '#10b981', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 6 },
-  submitBtnFinalText: { fontSize: 16, fontWeight: '700', color: '#ffffff' },
+  navBtnNext: { flex: 2, backgroundColor: COLORS.primary },
+  navBtnNextText: { fontFamily: FONTS.mono, fontSize: 14, fontWeight: '900', color: COLORS.primaryForeground },
+  submitBtnFinal: { flex: 2, backgroundColor: COLORS.emerald, borderWidth: 1, borderColor: COLORS.emerald },
+  submitBtnFinalText: { fontFamily: FONTS.mono, fontSize: 14, fontWeight: '900', color: COLORS.background },
   submitBtnDisabled: { opacity: 0.5 },
 });

@@ -1,14 +1,13 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Platform } from 'react-native';
 import { Link, usePathname } from 'expo-router';
-import { COLORS, FONTS, SPACING } from '@/constants/theme';
+import { COLORS, FONTS } from '@/constants/theme';
 
-// Lucide icons for RN
 import {
   LayoutDashboard,
   Search,
   FileText,
-  AlertTriangle,
+  Wallet,
   User,
   Scale,
 } from 'lucide-react-native';
@@ -21,9 +20,10 @@ interface TabItem {
 }
 
 const userTabs: TabItem[] = [
-  { href: '/(tabs)/escrow', path: '/escrow', label: 'Escrow', Icon: FileText },
-  { href: '/(tabs)/explore', path: '/explore', label: 'İlanlar', Icon: Search },
-  { href: '/(tabs)/disputes', path: '/disputes', label: 'Sorunlar', Icon: AlertTriangle },
+  { href: '/(tabs)/dashboard', path: '/dashboard', label: 'Ana', Icon: LayoutDashboard },
+  { href: '/(tabs)/explore', path: '/explore', label: 'Keşfet', Icon: Search },
+  { href: '/(tabs)/contracts', path: '/contracts', label: 'İşlerim', Icon: FileText },
+  { href: '/(tabs)/wallet', path: '/wallet', label: 'Cüzdan', Icon: Wallet },
   { href: '/(tabs)/profile', path: '/profile', label: 'Profil', Icon: User },
 ];
 
@@ -56,7 +56,7 @@ export default function TabBar({ isArbitrator = false }: TabBarProps) {
                   color={active ? COLORS.primary : COLORS.mutedForeground}
                   strokeWidth={active ? 2.5 : 1.5}
                 />
-                <Text style={[styles.label, active && styles.labelActive]}>
+                <Text style={[styles.label, active && styles.labelActive]} numberOfLines={1}>
                   {label}
                 </Text>
                 {active && <View style={styles.indicator} />}
@@ -74,19 +74,21 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.card,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
-    paddingBottom: Platform.select({ ios: 34, android: 20 }) ?? 20,
+    paddingBottom: Platform.select({ ios: 34, android: 16 }) ?? 16,
   },
   bar: {
     flexDirection: 'row',
-    height: 56,
+    height: 58,
+    paddingHorizontal: 8,
   },
   tab: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 4,
+    gap: 6,
     height: '100%',
     position: 'relative',
+    paddingHorizontal: 2,
   },
   label: {
     fontFamily: FONTS.mono,
