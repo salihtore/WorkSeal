@@ -20,8 +20,6 @@ import AppBackground from '@/components/AppBackground';
 import {
   Send,
   QrCode,
-  Droplets,
-  ExternalLink,
   RefreshCw,
   ArrowUpRight,
   ArrowDownLeft,
@@ -34,7 +32,7 @@ import { mistToSui, formatTimestamp } from '@/types';
 import { COLORS, FONTS, SPACING } from '@/constants/theme';
 
 export default function WalletFinancialHubScreen() {
-  const { address, balance, isSyncing, fetchBalance, requestFaucet, disconnect } = useWalletStore();
+  const { address, balance, isSyncing, fetchBalance, disconnect } = useWalletStore();
   const { contracts, loading } = useContracts(address);
 
   useEffect(() => {
@@ -105,11 +103,6 @@ export default function WalletFinancialHubScreen() {
   const handleCopy = () => {
     if (!address) return;
     Alert.alert('Cüzdan Adresi', 'Adres panoya kopyalandı:\n' + address);
-  };
-
-  const openExplorer = () => {
-    if (!address) return;
-    Linking.openURL(`https://suivision.xyz/account/${address}`);
   };
 
   return (
@@ -183,24 +176,6 @@ export default function WalletFinancialHubScreen() {
                 </View>
                 <Text style={styles.actionLabel}>Al</Text>
               </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.actionBtn}
-                onPress={requestFaucet}
-                disabled={isSyncing}
-              >
-                <View style={[styles.actionIconBox, styles.iconFaucet]}>
-                  <Droplets size={18} color={COLORS.emerald} />
-                </View>
-                <Text style={styles.actionLabel}>Musluk</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity style={styles.actionBtn} onPress={openExplorer}>
-                <View style={[styles.actionIconBox, styles.iconExplorer]}>
-                  <ExternalLink size={18} color={COLORS.mutedForeground} />
-                </View>
-                <Text style={styles.actionLabel}>Explorer</Text>
-              </TouchableOpacity>
             </View>
           </View>
 
@@ -253,8 +228,8 @@ export default function WalletFinancialHubScreen() {
                           tx.type === 'received' || tx.status === 'released'
                             ? { backgroundColor: 'rgba(16,185,129,0.1)', borderColor: 'rgba(16,185,129,0.2)' }
                             : tx.type === 'locked'
-                            ? { backgroundColor: 'rgba(79,195,247,0.1)', borderColor: 'rgba(79,195,247,0.2)' }
-                            : { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: COLORS.border },
+                              ? { backgroundColor: 'rgba(79,195,247,0.1)', borderColor: 'rgba(79,195,247,0.2)' }
+                              : { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: COLORS.border },
                         ]}
                       >
                         {tx.type === 'received' || tx.status === 'released' ? (
@@ -280,8 +255,8 @@ export default function WalletFinancialHubScreen() {
                         tx.type === 'received' || tx.status === 'released'
                           ? { color: COLORS.emerald }
                           : tx.type === 'locked'
-                          ? { color: COLORS.primary }
-                          : { color: COLORS.mutedForeground },
+                            ? { color: COLORS.primary }
+                            : { color: COLORS.mutedForeground },
                       ]}
                     >
                       {tx.type === 'sent' ? '-' : '+'}{tx.amount} SUI
@@ -391,8 +366,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   iconReceive: { backgroundColor: 'rgba(79,195,247,0.1)', borderColor: 'rgba(79,195,247,0.3)' },
-  iconFaucet: { backgroundColor: 'rgba(16,185,129,0.1)', borderColor: 'rgba(16,185,129,0.3)' },
-  iconExplorer: { backgroundColor: 'rgba(255,255,255,0.05)', borderColor: COLORS.border },
   actionLabel: { fontFamily: FONTS.mono, fontSize: 11, color: COLORS.foreground, fontWeight: '700' },
   subGrid: { flexDirection: 'row', gap: 16 },
   escrowStatCard: {

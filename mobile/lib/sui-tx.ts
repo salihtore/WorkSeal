@@ -184,3 +184,45 @@ export function buildSendMessageTx(params: {
 
   return tx;
 }
+
+export function buildResolveDisputeTx(params: {
+  contractId: string;
+  winnerAddress: string;
+  senderAddress: string;
+}): Transaction {
+  const tx = new Transaction();
+  tx.setSender(params.senderAddress);
+
+  tx.moveCall({
+    target: `${PACKAGE_ID}::${WORKSEAL_MODULE}::resolve_dispute_arbitrator`,
+    arguments: [
+      tx.object(REGISTRY_ID),
+      tx.object(params.contractId),
+      tx.pure.address(params.winnerAddress),
+    ],
+  });
+
+  return tx;
+}
+
+export function buildSendPrivateMessageTx(params: {
+  contractId: string;
+  content: string;
+  targetRole: number; // 0: Client, 1: Freelancer
+  senderAddress: string;
+}): Transaction {
+  const tx = new Transaction();
+  tx.setSender(params.senderAddress);
+
+  tx.moveCall({
+    target: `${PACKAGE_ID}::${WORKSEAL_MODULE}::send_private_message`,
+    arguments: [
+      tx.object(params.contractId),
+      tx.pure.string(params.content),
+      tx.pure.u8(params.targetRole),
+      tx.object(CLOCK_ID),
+    ],
+  });
+
+  return tx;
+}

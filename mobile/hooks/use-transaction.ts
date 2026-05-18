@@ -183,6 +183,40 @@ export function useTransaction() {
     }
   }, [address]);
 
+  const resolveDispute = useCallback(async (contractId: string, winnerAddress: string): Promise<string> => {
+    if (!address) throw new Error('Giriş yapılmamış');
+    setIsPending(true);
+    setError(null);
+    try {
+      const transaction = tx.buildResolveDisputeTx({ contractId, winnerAddress, senderAddress: address });
+      const digest = await signAndExecuteWithZkLogin(transaction, address);
+      setTxDigest(digest);
+      return digest;
+    } catch (e: any) {
+      setError(e.message || 'Hakem kararı işlenirken bir hata oluştu.');
+      throw e;
+    } finally {
+      setIsPending(false);
+    }
+  }, [address]);
+
+  const sendPrivateMessage = useCallback(async (contractId: string, content: string, targetRole: number): Promise<string> => {
+    if (!address) throw new Error('Giriş yapılmamış');
+    setIsPending(true);
+    setError(null);
+    try {
+      const transaction = tx.buildSendPrivateMessageTx({ contractId, content, targetRole, senderAddress: address });
+      const digest = await signAndExecuteWithZkLogin(transaction, address);
+      setTxDigest(digest);
+      return digest;
+    } catch (e: any) {
+      setError(e.message || 'Özel mesaj gönderilirken bir hata oluştu.');
+      throw e;
+    } finally {
+      setIsPending(false);
+    }
+  }, [address]);
+
   return {
     createContract,
     fundContract,
@@ -191,8 +225,10 @@ export function useTransaction() {
     rejectMilestone,
     approveAndRelease,
     raiseDispute,
+    resolveDispute,
     cancelContract,
     sendMessage,
+    sendPrivateMessage,
     isPending,
     error,
     txDigest,

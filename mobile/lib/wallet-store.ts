@@ -1,9 +1,10 @@
 import { create } from 'zustand';
 import { storage } from './storage';
-import { logoutZkLogin } from './zklogin';
+import { logoutZkLogin, signAndExecuteWithZkLogin } from './zklogin';
 import { suiClient } from './sui-client';
 import { mistToSui, suiToMist } from '@/types';
 import { Alert } from 'react-native';
+import { Transaction } from '@mysten/sui/transactions';
 
 interface WalletState {
   address: string | null;
@@ -97,7 +98,6 @@ export const useWalletStore = create<WalletState>((set, get) => ({
           '💧 Musluk Başarılı!',
           'Testnet üzerinden 1 SUI cüzdanınıza aktarılıyor. Lütfen 3-5 saniye bekleyin.'
         );
-        // 4 saniye sonra bakiyeyi güncelle
         setTimeout(() => get().fetchBalance(), 4000);
         return true;
       } else {
@@ -118,25 +118,40 @@ export const useWalletStore = create<WalletState>((set, get) => ({
     if (!address) return false;
 
     try {
-      const amountMist = suiToMist(Number(amountSui.replace(',', '.')));
-      if (amountMist > balanceMist) {
-        Alert.alert('Yetersiz Bakiye', 'Cüzdanınızda transfer ve gas için yeterli SUI yok.');
+      const numAmount = Number(amountSui.replace(',', '.'));
+      if (isNaN(numAmount) || numAmount <= 0) {
+        Alert.alert('Hata', 'Lütfen geçerli bir miktar girin.');
         return false;
       }
 
-      // Not: Gerçek SUI transferi TransactionBlock / completeZkLogin imza gerektirir.
-      // Demo / Testnet entegrasyonu olarak bakiyeyi simüle et veya Sui TransactionBlock oluştur
+      const amountMist = suiToMist(numAmount);
+      if (amountMist > balanceMist) {
+        Alert.alert('Yetersiz Bakiye', 'Cüzdanınızda transfer ve ağ ücreti (gas) için yeterli SUI bulunmuyor.');
+        return false;
+      }
+
+      set({ isSyncing: true });
+
+      // Gerçek On-Chain SUI Transfer İşlemi
+      const tx = new Transaction();
+      const [coin] = tx.splitCoins(tx.gas, [amountMist]);
+      tx.transferObjects([coin], recipient);
+
+      console.log('[WalletStore] On-Chain Transfer Başlatıldı, Miktar (MIST):', amountMist);
+      const digest = await signAndExecuteWithZkLogin(tx, address);
+
       Alert.alert(
-        '🚀 İşlem İletildi!',
-        `${amountSui} SUI -> ${recipient.slice(0, 8)}... adresine gönderildi.`
+        '🚀 İşlem Başarıyla İletildi!',
+        `${amountSui} SUI, Sui Testnet üzerinde karşı cüzdana transfer edildi.\n\nTxHash: ${digest.slice(0, 14)}...`
       );
-      
-      // Simülasyon bakiye düşüşü (Gerçekte tx onaylanınca fetchBalance çalışır)
-      const newMist = balanceMist - amountMist;
-      set({ balanceMist: newMist, balance: mistToSui(newMist) });
+
+      // Gerçek on-chain bakiyeyi senkronize et
+      await get().fetchBalance();
       return true;
     } catch (e: any) {
-      Alert.alert('Transfer Hatası', e?.message || 'İşlem gerçekleştirilemedi.');
+      console.error('[WalletStore] Transfer Hatası:', e);
+      Alert.alert('Transfer Başarısız', e?.message || 'İşlem gerçekleştirilemedi.');
+      set({ isSyncing: false });
       return false;
     }
   },

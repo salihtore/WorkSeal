@@ -16,7 +16,7 @@ import { testSuiConnection } from '@/lib/sui-client';
 import { COLORS } from '@/constants/theme';
 import * as SplashScreen from 'expo-splash-screen';
 
-SplashScreen.preventAutoHideAsync().catch(() => {});
+SplashScreen.preventAutoHideAsync().catch(() => { });
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 2, staleTime: 30_000 } },
@@ -45,7 +45,7 @@ function RootLayoutInner() {
         await disconnect();
       } finally {
         useWalletStore.setState({ isLoading: false });
-        await SplashScreen.hideAsync().catch(() => {});
+        await SplashScreen.hideAsync().catch(() => { });
       }
     })();
   }, []);
